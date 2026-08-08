@@ -1,0 +1,10 @@
+[project]
+name = "simple-llm"
+version = "0.1.0"
+description = "Post-train and evaluate a small language model for clear, simple English."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false
