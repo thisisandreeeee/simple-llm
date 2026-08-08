@@ -36,16 +36,18 @@ Source files will be added in later phases.
 ## Todo
 
 - Define rules
-- Build evaluation set of 100 prompts stored in data/evals.jsonl
+- Build evaluation set of 100 prompts stored in data/evals.jsonl; stratified by subject, difficulty, expected response length, need for technical terminology, risk of oversimplification
 - Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
 - Build LLM judge scorer: correctness, completeness, simplicity, preservation of technical meaning
 - Benchmark Qwen3-0.6B on all 100 prompts and run scorer
-- Generate SFT training data of 1-3k prompts using teacher model
+- Generate SFT training data of 1-3k prompts using teacher model: first call for correct answer, second call for simplification
 - Implement SFT script
+- Run local training smoke test: loss decreases, resume from checkpoint, e2e evaluation
 - Run training on colab (or other GPU platform)
+- Add experiment tracking and artifact management
 - Evaluate SFT vs base model using scorer (rule-based and LLM judge)
 - Evaluate using benchmarks: viol/100w, MMLU-Pro
-- Upload to huggingface
+- Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Add DPO
 - Add GRPO
 - Serve on vLLM
