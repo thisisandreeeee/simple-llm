@@ -32,3 +32,20 @@ source .venv/bin/activate
 The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
 
 Source files will be added in later phases.
+
+## Todo
+
+- Define rules
+- Build evaluation set of 100 prompts stored in data/evals.jsonl
+- Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
+- Build LLM judge scorer: correctness, completeness, simplicity, preservation of technical meaning
+- Benchmark Qwen3-0.6B on all 100 prompts and run scorer
+- Generate SFT training data of 1-3k prompts using teacher model
+- Implement SFT script
+- Run training on colab (or other GPU platform)
+- Evaluate SFT vs base model using scorer (rule-based and LLM judge)
+- Evaluate using benchmarks: viol/100w, MMLU-Pro
+- Upload to huggingface
+- Add DPO
+- Add GRPO
+- Serve on vLLM
