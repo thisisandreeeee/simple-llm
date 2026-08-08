@@ -17,10 +17,18 @@ The model should:
 
 ## Setup
 
-Install [uv](https://docs.astral.sh/uv/), then create the project environment:
+Install [uv](https://docs.astral.sh/uv/), then create the virtual environment and install the locked dependencies:
 
 ```bash
 uv sync
 ```
 
-Dependencies and source files will be added in later phases.
+`uv sync` creates `.venv` automatically. Activate it if you want to run tools without the `uv run` prefix:
+
+```bash
+source .venv/bin/activate
+```
+
+The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
+
+Source files will be added in later phases.
