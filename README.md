@@ -64,6 +64,8 @@ Todo:
 - Add experiment tracking and artifact management
 - Build LLM judge scorer
 
+Later:
+
 - Generate SFT training data of 1-3k prompts using teacher model: first call for correct answer, second call for simplification
 - Implement SFT script
 - Run local training smoke test: loss decreases, resume from checkpoint, e2e evaluation
