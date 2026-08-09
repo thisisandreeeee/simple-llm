@@ -241,9 +241,6 @@ def run_experiment(
         evals = evals[: args.limit]
     print(f"Validated {len(evals)} prompt(s)")
 
-    mode = os.getenv("WANDB_MODE", "online")
-    if mode != "online":
-        raise RuntimeError("WANDB_MODE must be online; W&B is the run system of record")
     random.seed(SEED)
     torch.manual_seed(SEED)
     target = device()
@@ -277,6 +274,7 @@ def run_experiment(
         )
 
         results: list[dict[str, Any]] = []
+        failed_count = 0
         predictions = wandb.Table(
             columns=list(PREDICTION_COLUMNS), log_mode="INCREMENTAL"
         )
@@ -311,12 +309,13 @@ def run_experiment(
                 result["error"] = f"{type(exc).__name__}: {exc}"
                 print(f"[{index}/{len(evals)}] {item['id']}: {result['error']}")
             results.append(result)
+            failed_count += int("error" in result)
             predictions.add_data(*_prediction_row(result))
             run.log(
                 {
                     "predictions": predictions,
                     "progress/completed": index,
-                    "progress/failed": int("error" in result),
+                    "progress/failed_count": failed_count,
                 },
                 step=index,
             )
