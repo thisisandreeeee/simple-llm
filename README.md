@@ -33,6 +33,22 @@ The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its
 
 Source files will be added in later phases.
 
+## Experiments
+
+Run the raw Qwen3-0.6B baseline:
+
+```bash
+uv run python experiments/01_qwen3_06b_base.py
+```
+
+Run Qwen3-0.6B with the [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) system prompt:
+
+```bash
+uv run python experiments/02_qwen3_06b_simple_english.py
+```
+
+Add `--limit N` to either command for a smaller run.
+
 ## Backlog
 
 Done:
@@ -44,10 +60,13 @@ Done:
 Todo:
 
 - Benchmark Qwen3-0.6B on all 100 prompts and run scorer
-- Add experiment tracking and artifact management
-- Build LLM judge scorer: correctness, completeness, simplicity, preservation of technical meaning
+- Benchmark Qwen3-0.6B with enhanced system prompt using simple english skill
+- Build LLM judge scorer
+- Run benchmarks on CUDA enabled GPUs
+
 - Generate SFT training data of 1-3k prompts using teacher model: first call for correct answer, second call for simplification
 - Implement SFT script
+- Add experiment tracking and artifact management
 - Run local training smoke test: loss decreases, resume from checkpoint, e2e evaluation
 - Run training on colab (or other GPU platform)
 - Evaluate SFT vs base model using scorer (rule-based and LLM judge)

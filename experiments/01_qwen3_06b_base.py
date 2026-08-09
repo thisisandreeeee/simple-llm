@@ -66,9 +66,18 @@ def git_info() -> dict[str, Any]:
     return {"commit": run("rev-parse", "HEAD"), "dirty": bool(status)}
 
 
-def generate(model: Any, tokenizer: Any, target: torch.device, prompt: str) -> dict[str, Any]:
+def generate(
+    model: Any,
+    tokenizer: Any,
+    target: torch.device,
+    prompt: str,
+    system_prompt: str | None = None,
+) -> dict[str, Any]:
+    messages = [{"role": "user", "content": prompt}]
+    if system_prompt:
+        messages.insert(0, {"role": "system", "content": system_prompt})
     text = tokenizer.apply_chat_template(
-        [{"role": "user", "content": prompt}],
+        messages,
         tokenize=False,
         add_generation_prompt=True,
         enable_thinking=False,
@@ -141,8 +150,15 @@ def summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(
+    *,
+    experiment: str = "01_qwen3_06b_base",
+    condition: str = "base_raw",
+    system_prompt: str | None = None,
+    system_prompt_source: str | None = None,
+    description: str = __doc__,
+) -> None:
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--limit", type=int, help="Run only the first N prompts.")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
@@ -162,14 +178,16 @@ def main() -> None:
     model.eval()
 
     timestamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S-%f")
-    run_dir = ROOT / "runs" / f"01_qwen3_06b_base-{timestamp}"
+    run_dir = ROOT / "runs" / f"{experiment}-{timestamp}"
     run_dir.mkdir(parents=True)
     (run_dir / "config.json").write_text(
         json.dumps(
             {
                 "model": MODEL,
                 "model_revision": getattr(model.config, "_commit_hash", None),
-                "condition": "base_raw",
+                "condition": condition,
+                "system_prompt": system_prompt,
+                "system_prompt_source": system_prompt_source,
                 "eval_sha256": hashlib.sha256(EVALS.read_bytes()).hexdigest(),
                 "prompt_count": len(evals),
                 "seed": SEED,
@@ -193,7 +211,9 @@ def main() -> None:
                 "prompt": item["prompt"],
             }
             try:
-                generated = generate(model, tokenizer, target, item["prompt"])
+                generated = generate(
+                    model, tokenizer, target, item["prompt"], system_prompt
+                )
                 result.update(generated)
                 validity = validate_answer(
                     item["prompt"],
