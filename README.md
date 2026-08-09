@@ -45,8 +45,6 @@ source .env
 set +a
 ```
 
-Runs are uploaded to the `simple-llm` W&B project. W&B also creates a local `wandb/` directory for temporary logs and upload staging. Git ignores this directory; you can delete it when no run is active because W&B is the source of truth for completed runs.
-
 ## Experiments
 
 Run the raw Qwen3-0.6B baseline:
