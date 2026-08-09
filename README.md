@@ -56,17 +56,16 @@ Done:
 - Define rules
 - Build evaluation set of 100 prompts stored in data/evals.jsonl; stratified by subject, difficulty, expected response length, need for technical terminology, risk of oversimplification
 - Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
+- Benchmark Qwen3-0.6B (base vs enhanced system prompt) on all 100 prompts and run scorer
 
 Todo:
 
-- Benchmark Qwen3-0.6B on all 100 prompts and run scorer
-- Benchmark Qwen3-0.6B with enhanced system prompt using simple english skill
+- Upgrade to use Qwen3-4B on remote GPUs
+- Add experiment tracking and artifact management
 - Build LLM judge scorer
-- Run benchmarks on CUDA enabled GPUs
 
 - Generate SFT training data of 1-3k prompts using teacher model: first call for correct answer, second call for simplification
 - Implement SFT script
-- Add experiment tracking and artifact management
 - Run local training smoke test: loss decreases, resume from checkpoint, e2e evaluation
 - Run training on colab (or other GPU platform)
 - Evaluate SFT vs base model using scorer (rule-based and LLM judge)
