@@ -47,12 +47,17 @@ def score(
     )
 
 
-from .rules import RULE_SCORERS, controlled_vocabulary_scorer
+from .rules import (
+    RULE_SCORERS,
+    controlled_vocabulary_scorer,
+    controlled_vocabulary_scorer_from_file,
+)
 
 __all__ = [
     "RULE_SCORERS",
     "Scorer",
     "STEScores",
     "controlled_vocabulary_scorer",
+    "controlled_vocabulary_scorer_from_file",
     "score",
 ]
