@@ -9,7 +9,7 @@ import random
 import subprocess
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from statistics import mean
@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from simple_llm.scoring import RULE_SCORERS, score
+from simple_llm.scoring import RULE_SCORERS, score, validate_answer
 
 MODEL = "Qwen/Qwen3-0.6B"
 EVALS = ROOT / "data/evals.jsonl"
@@ -95,7 +95,15 @@ def generate(model: Any, tokenizer: Any, target: torch.device, prompt: str) -> d
 
 
 def summary(results: list[dict[str, Any]]) -> dict[str, Any]:
-    successful = [result for result in results if "scores" in result]
+    successful = [
+        result for result in results if isinstance(result.get("scores"), dict)
+    ]
+    failed = [result for result in results if "error" in result]
+    invalid = [
+        result
+        for result in results
+        if result.get("validity", {}).get("valid") is False
+    ]
     all_scores: dict[str, list[float]] = defaultdict(list)
     domain_scores: dict[str, dict[str, list[float]]] = defaultdict(
         lambda: defaultdict(list)
@@ -114,8 +122,16 @@ def summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "prompt_count": len(results),
         "successful_count": len(successful),
-        "failed_count": len(results) - len(successful),
-        "truncated_count": sum(result.get("truncated", False) for result in successful),
+        "failed_count": len(failed),
+        "invalid_count": len(invalid),
+        "invalid_reasons": dict(
+            Counter(
+                reason
+                for result in invalid
+                for reason in result["validity"]["reasons"]
+            )
+        ),
+        "truncated_count": sum(result.get("truncated", False) for result in results),
         "score_means": means(all_scores),
         "domain_score_means": {
             domain: means(scores) for domain, scores in sorted(domain_scores.items())
@@ -179,9 +195,21 @@ def main() -> None:
             try:
                 generated = generate(model, tokenizer, target, item["prompt"])
                 result.update(generated)
-                result["scores"] = score(
-                    item["prompt"], generated["response"], RULE_SCORERS
-                ).model_dump(exclude_none=True)
+                validity = validate_answer(
+                    item["prompt"],
+                    generated["response"],
+                    truncated=generated["truncated"],
+                )
+                result["validity"] = {
+                    "valid": validity.valid,
+                    "reasons": list(validity.reasons),
+                }
+                result["scores"] = (
+                    score(item["prompt"], generated["response"], RULE_SCORERS)
+                    .model_dump(exclude_none=True)
+                    if validity.valid
+                    else None
+                )
                 print(f"[{index}/{len(evals)}] {item['id']}")
             except Exception as exc:  # Keep completed results if one prompt fails.
                 result["error"] = f"{type(exc).__name__}: {exc}"

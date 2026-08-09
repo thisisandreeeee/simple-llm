@@ -59,6 +59,7 @@ from .rules import (
     average_sentence_length,
     long_sentence_fraction,
 )
+from .validity import AnswerValidity, validate_answer
 
 __all__ = [
     "RULE_SCORERS",
@@ -68,5 +69,7 @@ __all__ = [
     "controlled_vocabulary_scorer_from_file",
     "average_sentence_length",
     "long_sentence_fraction",
+    "AnswerValidity",
+    "validate_answer",
     "score",
 ]
