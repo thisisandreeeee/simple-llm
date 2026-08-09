@@ -2182,6 +2182,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "torch" },
+    { name = "transformers" },
     { name = "trl", extra = ["peft"] },
 ]
 
@@ -2195,6 +2197,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
+    { name = "torch", specifier = ">=2.0.0" },
+    { name = "transformers", specifier = ">=4.51.0" },
     { name = "trl", extras = ["peft"], specifier = ">=1.9.2" },
 ]
 
