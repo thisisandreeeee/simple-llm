@@ -34,7 +34,7 @@
 {"id":"DBS-04","prompt":"What is the difference between OLTP and OLAP systems? Compare their workloads, data models, storage patterns, and latency goals."}
 {"id":"DBS-05","prompt":"Why do applications use database connection pools, and how can a poorly sized pool hurt performance?"}
 {"id":"DBS-06","prompt":"Explain how a relational query optimizer chooses an execution plan. Cover statistics, cardinality estimates, cost models, access paths, and why estimates go wrong."}
-{"id":"DBS-07","prompt":"Write a 'Getting Started' documentation section for the CLI tool sqlpipe."}
+{"id":"DBS-07","prompt":"Write a beginner-friendly Getting Started section for PostgreSQL's `psql` client. Cover connecting with placeholders, listing databases and tables, running a safe read-only query, getting help, and exiting."}
 {"id":"DBS-08","prompt":"Give a concise architecture overview of change data capture, from database logs through capture and transport to downstream consumers."}
 {"id":"DBS-09","prompt":"Write a migration guide for upgrading a database-backed application across a breaking schema change. Cover preparation, compatibility, staged rollout, rollback, and verification."}
 {"id":"DBS-10","prompt":"Write a troubleshooting guide for slow SQL queries, using metrics and execution plans to move from symptoms to likely causes and fixes."}
@@ -45,7 +45,7 @@
 {"id":"DST-05","prompt":"What is consistent hashing, and why are virtual nodes commonly used with it?"}
 {"id":"DST-06","prompt":"Explain the CAP theorem and correct the misconception that every distributed system must permanently choose only two of consistency, availability, and partition tolerance."}
 {"id":"DST-07","prompt":"When is a distributed lock actually necessary, and what can go wrong if I treat it like a normal in-process mutex?"}
-{"id":"DST-08","prompt":"Write an architecture overview of hermes-agent."}
+{"id":"DST-08","prompt":"Give a concise architecture overview of a distributed key-value store. Cover partitioning, replication, request routing, consistency, membership, and failure recovery."}
 {"id":"DST-09","prompt":"Write a deployment guide for a multi-region service. Cover traffic routing, data replication, consistency, failover, data residency, staged rollout, and validation."}
 {"id":"DST-10","prompt":"Write an operations runbook for growing consumer lag in a distributed stream processor. Include alerts, diagnosis, mitigations, escalation, and recovery checks."}
 {"id":"SEC-01","prompt":"What is the difference between authentication and authorization? Give a concrete example of each."}
