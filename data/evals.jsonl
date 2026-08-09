@@ -1,0 +1,100 @@
+{"id":"NET-01","prompt":"I understand that IPv6 has longer addresses than IPv4, but what else is actually different in practice?"}
+{"id":"NET-02","prompt":"Explain what happens when a browser resolves a domain name through DNS, including recursive resolvers, authoritative servers, and caching."}
+{"id":"NET-03","prompt":"Explain how TCP congestion control works. Cover congestion windows, feedback signals, slow start, congestion avoidance, and important variations between implementations."}
+{"id":"NET-04","prompt":"Someone on my team said HTTP and TCP are competing protocols. Is that right? How do they actually relate?"}
+{"id":"NET-05","prompt":"What is network address translation, and what benefits and tradeoffs does it introduce?"}
+{"id":"NET-06","prompt":"Why does BGP use policy-based route selection instead of simply choosing the shortest geographic or network path?"}
+{"id":"NET-07","prompt":"Write a beginner-friendly Getting Started section for `tcpdump`. Show how to choose an interface, capture a small number of packets, apply a simple port filter, save a capture, and avoid collecting sensitive traffic."}
+{"id":"NET-08","prompt":"In one paragraph, give a high-level architecture overview of a service mesh, naming its main components and explaining how application traffic flows through it."}
+{"id":"NET-09","prompt":"Write a TLS configuration guide for a reverse proxy. Cover certificates, private-key protection, protocol and cipher choices, redirects, validation, renewal, and common failure modes."}
+{"id":"NET-10","prompt":"Write a troubleshooting guide for intermittent DNS failures. Organize it by symptoms, diagnostic checks, interpretation, and remedies."}
+{"id":"ML-01","prompt":"What is an exploding gradient? Explain its symptoms, causes, and common mitigations."}
+{"id":"ML-02","prompt":"Why are mixture-of-experts models useful for transformers? Explain conditional computation, routing, capacity, and the main tradeoffs."}
+{"id":"ML-03","prompt":"Explain why standard self-attention becomes expensive for long sequences. Discuss compute complexity, memory use, and how implementation choices can change practical performance."}
+{"id":"ML-04","prompt":"Why does a model need much more memory during training than when I use it for inference?"}
+{"id":"ML-05","prompt":"What is an embedding in machine learning, and what does distance between embeddings represent?"}
+{"id":"ML-06","prompt":"Explain the difference between model accuracy and calibration. Why can an accurate classifier still be poorly calibrated, and when does that matter?"}
+{"id":"ML-07","prompt":"My training loss keeps decreasing while validation loss starts rising. What is likely happening, how can I confirm it, and what should I try next?"}
+{"id":"ML-08","prompt":"Give a concise architecture overview of a feature store, including offline storage, online serving, feature computation, and training-serving consistency."}
+{"id":"ML-09","prompt":"Write an operations guide for distributed model training. Cover cluster topology, launching jobs, monitoring workers, checkpoint recovery, and validating the final artifact."}
+{"id":"ML-10","prompt":"Write a concept guide explaining the purpose of a model registry and the meanings of artifacts, versions, stages, lineage, and access controls."}
+{"id":"API-01","prompt":"Is protobuf comparable to HTTP, or are they solving different problems?"}
+{"id":"API-02","prompt":"Compare REST-style APIs with RPC APIs. Discuss interaction models, contracts, coupling, evolution, and situations where each fits well."}
+{"id":"API-03","prompt":"Explain how Protocol Buffers schemas can evolve compatibly. Cover field numbers, unknown fields, adding and removing fields, reserved identifiers, and unsafe changes."}
+{"id":"API-04","prompt":"What does idempotency mean for an API, and why is it important when clients retry requests?"}
+{"id":"API-05","prompt":"What is JSON Schema useful for, and what can it not guarantee about an application?"}
+{"id":"API-06","prompt":"Why is API versioning difficult? Explain common versioning strategies and their compatibility and maintenance tradeoffs."}
+{"id":"API-07","prompt":"Write a practical guide for testing a JSON REST API with `curl`. Include GET and POST examples, headers, authentication placeholders, status inspection, error output, and safe handling of credentials."}
+{"id":"API-08","prompt":"In one paragraph, describe the architecture of an event API with producers, a broker, schemas, consumers, and delivery guarantees."}
+{"id":"API-09","prompt":"Write authentication documentation for a public REST API that supports OAuth 2.0 client credentials and scoped bearer tokens. Include token acquisition, secure handling, expiry, errors, and an example request."}
+{"id":"API-10","prompt":"Write a webhook troubleshooting guide covering signature verification, retries, duplicate delivery, out-of-order events, timeouts, and diagnostic logging."}
+{"id":"DBS-01","prompt":"How does a database index make queries faster, and what costs or limitations does it introduce?"}
+{"id":"DBS-02","prompt":"Explain multi-version concurrency control. How do snapshots, row versions, visibility rules, and cleanup allow readers and writers to coexist?"}
+{"id":"DBS-03","prompt":"Compare common database transaction isolation levels. Explain the anomalies each prevents, the guarantees applications can rely on, and where database implementations differ."}
+{"id":"DBS-04","prompt":"What is the difference between OLTP and OLAP systems? Compare their workloads, data models, storage patterns, and latency goals."}
+{"id":"DBS-05","prompt":"Why do applications use database connection pools, and how can a poorly sized pool hurt performance?"}
+{"id":"DBS-06","prompt":"Explain how a relational query optimizer chooses an execution plan. Cover statistics, cardinality estimates, cost models, access paths, and why estimates go wrong."}
+{"id":"DBS-07","prompt":"Write a 'Getting Started' documentation section for the CLI tool sqlpipe."}
+{"id":"DBS-08","prompt":"Give a concise architecture overview of change data capture, from database logs through capture and transport to downstream consumers."}
+{"id":"DBS-09","prompt":"Write a migration guide for upgrading a database-backed application across a breaking schema change. Cover preparation, compatibility, staged rollout, rollback, and verification."}
+{"id":"DBS-10","prompt":"Write a troubleshooting guide for slow SQL queries, using metrics and execution plans to move from symptoms to likely causes and fixes."}
+{"id":"DST-01","prompt":"What does eventual consistency mean, and does it imply that a distributed system is unreliable?"}
+{"id":"DST-02","prompt":"Explain how leader election works in a consensus system, including terms, quorums, failure detection, and the safety property it protects."}
+{"id":"DST-03","prompt":"A vendor says its stream processor guarantees 'exactly once.' What questions should I ask before relying on that claim?"}
+{"id":"DST-04","prompt":"Compare message queues with event streams. Discuss retention, consumption, replay, ordering, and typical use cases."}
+{"id":"DST-05","prompt":"What is consistent hashing, and why are virtual nodes commonly used with it?"}
+{"id":"DST-06","prompt":"Explain the CAP theorem and correct the misconception that every distributed system must permanently choose only two of consistency, availability, and partition tolerance."}
+{"id":"DST-07","prompt":"When is a distributed lock actually necessary, and what can go wrong if I treat it like a normal in-process mutex?"}
+{"id":"DST-08","prompt":"Write an architecture overview of hermes-agent."}
+{"id":"DST-09","prompt":"Write a deployment guide for a multi-region service. Cover traffic routing, data replication, consistency, failover, data residency, staged rollout, and validation."}
+{"id":"DST-10","prompt":"Write an operations runbook for growing consumer lag in a distributed stream processor. Include alerts, diagnosis, mitigations, escalation, and recovery checks."}
+{"id":"SEC-01","prompt":"What is the difference between authentication and authorization? Give a concrete example of each."}
+{"id":"SEC-02","prompt":"Explain the roles in OAuth 2.0: resource owner, client, authorization server, and resource server. Show how they interact in a typical flow."}
+{"id":"SEC-03","prompt":"Explain how public key infrastructure establishes trust. Cover certificate chains, hostname validation, expiration, revocation, trust stores, and operational limitations."}
+{"id":"SEC-04","prompt":"Why can't I encrypt a password and store it in the database? Why do people recommend password hashing instead?"}
+{"id":"SEC-05","prompt":"What does 'zero trust' mean in security? Explain its principles without treating it as a product or a guarantee of perfect security."}
+{"id":"SEC-06","prompt":"Why is threat modeling useful? Explain assets, trust boundaries, adversaries, assumptions, attack paths, and prioritization."}
+{"id":"SEC-07","prompt":"Why is plain SHA-256 not suitable for storing passwords? Explain what a production password-storage design should use instead."}
+{"id":"SEC-08","prompt":"Give a concise architecture overview of an identity platform, identifying its trust boundaries, token flows, credential stores, policy engine, and external dependencies."}
+{"id":"SEC-09","prompt":"Write an enterprise single sign-on integration guide. Cover prerequisites, metadata exchange, login flows, attribute mapping, testing, certificate rollover, and recovery."}
+{"id":"SEC-10","prompt":"Write an incident runbook for an exposed production credential. Prioritize containment, rotation, investigation, communication, and verification."}
+{"id":"CLD-01","prompt":"What is the difference between containers and virtual machines? Compare isolation, packaging, startup, density, and operational tradeoffs."}
+{"id":"CLD-02","prompt":"Kubernetes keeps changing resources after I edit them manually. Why does it do that, and what does 'reconciliation' mean?"}
+{"id":"CLD-03","prompt":"Explain how autoscaling systems work and why they can become unstable. Cover signals, delays, feedback loops, cooldowns, and capacity limits."}
+{"id":"CLD-04","prompt":"What does a load balancer do? Explain distribution algorithms, health checks, layer 4 versus layer 7 behavior, and session persistence."}
+{"id":"CLD-05","prompt":"Why do teams use infrastructure as code? Explain repeatability, review, drift detection, and state management."}
+{"id":"CLD-06","prompt":"What causes cold starts in serverless platforms? Explain the execution lifecycle, provisioning work, dependencies, and mitigation tradeoffs."}
+{"id":"CLD-07","prompt":"My Kubernetes pod is in `CrashLoopBackOff`. Write a troubleshooting guide that explains what the status means and gives a safe diagnostic sequence."}
+{"id":"CLD-08","prompt":"In one paragraph, describe the architecture of an observability platform from telemetry collection through transport, storage, querying, and visualization."}
+{"id":"CLD-09","prompt":"Write an installation guide for a Kubernetes operator. Include prerequisites, namespaces, permissions, custom resources, installation, health validation, upgrades, and removal."}
+{"id":"CLD-10","prompt":"Write an operations runbook for elevated request latency. Structure it around confirming the symptom, localizing the bottleneck, mitigating impact, and verifying recovery."}
+{"id":"PLR-01","prompt":"What is the difference between stack and heap memory? Explain typical allocation and lifetime behavior while noting that language implementations differ."}
+{"id":"PLR-02","prompt":"Explain how garbage collection works. Cover reachability, tracing, reclamation, pauses, generations, and key tradeoffs."}
+{"id":"PLR-03","prompt":"If a function is marked `async`, does that mean it runs in parallel? Explain what actually happens."}
+{"id":"PLR-04","prompt":"Compare static and dynamic typing. Discuss when checks occur, what guarantees they provide, expressiveness, runtime behavior, and tooling."}
+{"id":"PLR-05","prompt":"What is a closure, and how can it retain access to variables after the enclosing function returns?"}
+{"id":"PLR-06","prompt":"Explain what a programming-language memory model specifies. Cover ordering, visibility, data races, synchronization, and why hardware behavior alone is insufficient."}
+{"id":"PLR-07","prompt":"A Python `asyncio` application still freezes during some requests. Explain how synchronous work can block the event loop and how to diagnose and fix it."}
+{"id":"PLR-08","prompt":"Give a concise architecture overview of a plugin runtime, covering discovery, loading, lifecycle hooks, isolation, capabilities, and extension contracts."}
+{"id":"PLR-09","prompt":"Write a migration guide for a major language-runtime upgrade. Cover breaking changes, dependency compatibility, staged adoption, testing, observability, and rollback."}
+{"id":"PLR-10","prompt":"Write a troubleshooting guide for package dependency conflicts. Explain how to inspect constraints, identify the conflicting chain, choose a resolution, and verify it."}
+{"id":"DEV-01","prompt":"What is the difference between a compiler and an interpreter? Explain why many language implementations use elements of both."}
+{"id":"DEV-02","prompt":"I'm about to update my feature branch. Should I merge `main` into it or rebase onto `main`? Explain the tradeoffs and when rebasing is unsafe."}
+{"id":"DEV-03","prompt":"Explain how incremental build systems decide what to rebuild. Cover dependency graphs, fingerprints, invalidation, caching, and correctness hazards."}
+{"id":"DEV-04","prompt":"What does semantic versioning promise, and what are its practical limitations?"}
+{"id":"DEV-05","prompt":"Why is the Language Server Protocol useful, and how does it separate editor interfaces from language-specific tooling?"}
+{"id":"DEV-06","prompt":"What makes a build reproducible? Explain controlled inputs, deterministic processing, environment capture, provenance, and independent verification."}
+{"id":"DEV-07","prompt":"Write a reusable Getting Started template for a command-line tool's README. It should cover installation, prerequisites, a first successful command, expected output, configuration, common errors, and next steps without inventing product-specific commands."}
+{"id":"DEV-08","prompt":"Give a concise architecture overview of a continuous integration system, including triggers, scheduling, workers, caches, artifacts, logs, and status reporting."}
+{"id":"DEV-09","prompt":"Write a configuration guide for a monorepo build tool. Cover workspace discovery, dependency graphs, targets, local and remote caching, environment inputs, and validation."}
+{"id":"DEV-10","prompt":"Write a troubleshooting guide for a failed CI pipeline. Use logs, artifacts, environment differences, local reproduction, and targeted reruns to diagnose it."}
+{"id":"ARC-01","prompt":"Our application is growing. How do I know whether splitting the monolith into microservices would help or just add operational complexity?"}
+{"id":"ARC-02","prompt":"Explain the dependency inversion principle and how it changes the direction of dependencies between policy and implementation code."}
+{"id":"ARC-03","prompt":"Explain event-driven architecture, including its benefits and its tradeoffs around contracts, ordering, failure handling, consistency, debugging, and observability."}
+{"id":"ARC-04","prompt":"What is the difference between a control plane and a data plane? Give examples of the decisions and work performed by each."}
+{"id":"ARC-05","prompt":"What is ports-and-adapters architecture, and how do ports, adapters, and the domain model relate?"}
+{"id":"ARC-06","prompt":"Explain how multiple caching layers interact. Cover placement, cache keys, invalidation, consistency, stampedes, failures, and observability."}
+{"id":"ARC-07","prompt":"How should I decide where to draw service boundaries? Give practical signals, warning signs, and examples rather than a single rule."}
+{"id":"ARC-08","prompt":"Write a template for a one-page architecture overview aimed at engineers joining an existing service team. Include the questions each section should answer."}
+{"id":"ARC-09","prompt":"Write architecture documentation for an internal platform service. Include system context, major containers, request and event flows, trust boundaries, key decisions, quality attributes, dependencies, and known risks."}
+{"id":"ARC-10","prompt":"Write a guide to architecture decision records. Explain when to create one and how to document context, constraints, considered alternatives, the decision, consequences, and review status."}
