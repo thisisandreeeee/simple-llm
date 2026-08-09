@@ -14,5 +14,7 @@ package = false
 
 [dependency-groups]
 dev = [
+    "ipython>=8.0.0",
+    "pypdf[crypto]>=5.0.0",
     "pytest>=8.0.0",
 ]
