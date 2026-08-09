@@ -10,6 +10,8 @@ from . import Scorer
 
 _CODE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
 _SENTENCE = re.compile(r"[.!?](?:['\"”’)\]]*)\s+(?=[A-Z0-9])")
+_LIST_ITEM = re.compile(r"(?m)^\s*(?:[-*+]|\d+[.)])\s+")
+_LIST_DOT = "<LIST_DOT>"
 _MEASUREMENT = re.compile(r"\b\d+(?:\.\d+)?\s*[A-Za-zµ°]+\b")
 _IDENTIFIER = re.compile(
     r"\b(?=[A-Za-z0-9][A-Za-z0-9._:/-]*\d)"
@@ -55,7 +57,19 @@ def _sentences(text: str) -> list[str]:
     text = _mask_code(text).strip()
     if not text:
         return []
-    return [part.strip() for part in _SENTENCE.split(text) if part.strip()]
+    def mark_list_item(match: re.Match[str]) -> str:
+        marker = match.group(0)
+        if re.match(r"\s*\d+\.\s+", marker):
+            marker = marker.replace(".", _LIST_DOT, 1)
+        return "\0" + marker
+
+    text = _LIST_ITEM.sub(mark_list_item, text)
+    return [
+        part.strip().replace(_LIST_DOT, ".")
+        for segment in text.split("\0")
+        for part in _SENTENCE.split(segment)
+        if part.strip()
+    ]
 
 
 def _words(text: str) -> list[str]:
