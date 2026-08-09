@@ -6,7 +6,8 @@ from simple_llm.scoring.rules import (
     controlled_vocabulary_scorer_from_file,
     document_limits,
     procedure_syntax,
-    sentence_length,
+    average_sentence_length,
+    long_sentence_fraction,
     sentence_mechanics,
     terminology_consistency,
     verb_forms_and_modals,
@@ -16,17 +17,32 @@ from simple_llm.scoring.rules import (
 @pytest.mark.parametrize(
     ("answer", "expected"),
     [
-        ("Install the pump.", 1.0),
-        ("Install the pump. Then start the motor.", 1.0),
+        ("Install the pump.", 0.0),
+        ("Install the pump. Then start the motor.", 0.0),
         (
             "Install the pump and start the motor after you confirm that the valve "
             "is open and the pressure is stable and the area is clear.",
-            0.0,
+            1.0,
         ),
     ],
 )
-def test_sentence_length_and_procedure_detection(answer: str, expected: float) -> None:
-    assert sentence_length("", answer) == expected
+def test_long_sentence_fraction_and_procedure_detection(
+    answer: str, expected: float
+) -> None:
+    assert long_sentence_fraction("", answer) == expected
+
+
+def test_sentence_length_metrics_are_separate() -> None:
+    answer = "Install the pump. Then start the motor."
+    assert average_sentence_length("", answer) == 3.5
+    assert long_sentence_fraction("", answer) == 0.0
+
+    long_answer = (
+        "Install the pump and start the motor after you confirm that the valve is "
+        "open and the pressure is stable and the area is clear."
+    )
+    assert average_sentence_length("", long_answer) > 20
+    assert long_sentence_fraction("", long_answer) == 1.0
 
 
 def test_sentence_mechanics() -> None:
@@ -34,23 +50,25 @@ def test_sentence_mechanics() -> None:
     assert sentence_mechanics("", "Install the pump; start the motor.") == 0.0
     assert sentence_mechanics("", "Use e.g. the red port.") == 0.0
     assert sentence_mechanics("", "IPv4's address is private. It is not public.") == 1.0
-    assert sentence_mechanics("", "Run `foo(); bar();`. Then inspect the output.") == 1.0
+    assert sentence_mechanics(
+        "", "Run `foo(); bar();`. Then inspect the output."
+    ) == 1.0
 
 
 def test_sentence_ending_after_quote() -> None:
-    assert sentence_length(
+    assert long_sentence_fraction(
         "",
         'IPv6 is not “IPv4 with bigger addresses.” In practice, it uses multicast.',
-    ) == 1.0
+    ) == 0.0
 
 
 def test_sentence_boundaries_handle_decimals_and_quotes() -> None:
     answer = 'Set the value to 1.5 V. Then start the pump.'
-    assert sentence_length("", answer) == 1.0
-    assert sentence_length(
+    assert long_sentence_fraction("", answer) == 0.0
+    assert long_sentence_fraction(
         "",
         'IPv6 is “IPv4 with bigger addresses.” In practice, it uses multicast.',
-    ) == 1.0
+    ) == 0.0
 
 
 def test_technical_identifiers_count_as_one_word() -> None:

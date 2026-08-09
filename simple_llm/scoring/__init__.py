@@ -6,16 +6,21 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 
 Score = Annotated[float, Field(ge=0, le=1)]
+NonNegativeMetric = Annotated[float, Field(ge=0)]
+Fraction = Annotated[float, Field(ge=0, le=1)]
 Scorer = Callable[[str, str], float]
 
 
 class STEScores(BaseModel):
-    """Independent scores for one prompt and answer; no aggregate score."""
+    """Independent STE dimensions for one prompt and answer; no aggregate."""
 
     model_config = ConfigDict(extra="forbid")
 
     # Rule-based dimensions
-    sentence_length: Score | None = None
+    # Raw metrics: lower is better for both fields. Other fields are 0–1
+    # compliance scores where higher is better.
+    average_sentence_length: NonNegativeMetric | None = None
+    long_sentence_fraction: Fraction | None = None
     controlled_vocabulary: Score | None = None
     verb_forms_and_modals: Score | None = None
     sentence_mechanics: Score | None = None
@@ -51,6 +56,8 @@ from .rules import (
     RULE_SCORERS,
     controlled_vocabulary_scorer,
     controlled_vocabulary_scorer_from_file,
+    average_sentence_length,
+    long_sentence_fraction,
 )
 
 __all__ = [
@@ -59,5 +66,7 @@ __all__ = [
     "STEScores",
     "controlled_vocabulary_scorer",
     "controlled_vocabulary_scorer_from_file",
+    "average_sentence_length",
+    "long_sentence_fraction",
     "score",
 ]

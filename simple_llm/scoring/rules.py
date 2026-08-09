@@ -42,6 +42,10 @@ _TERM_GROUPS = (
     frozenset({"config", "configuration", "settings"}),
 )
 
+_PROCEDURE_SENTENCE_LIMIT = 20
+_DESCRIPTIVE_SENTENCE_LIMIT = 25
+_PARAGRAPH_SENTENCE_LIMIT = 6
+
 
 def _mask_code(text: str) -> str:
     return _CODE.sub(" CODE ", text).replace("’", "'").replace("‘", "'")
@@ -60,7 +64,7 @@ def _words(text: str) -> list[str]:
     return _WORD.findall(text)
 
 
-def _ratio(total: int, violations: int) -> float:
+def _compliance_fraction(total: int, violations: int) -> float:
     return 1.0 if total == 0 else max(0.0, 1.0 - violations / total)
 
 
@@ -73,13 +77,29 @@ def _looks_procedural(answer: str) -> bool:
     )
 
 
-def sentence_length(prompt: str, answer: str) -> float:
-    """Return the fraction of sentences within the inferred STE limit."""
-
+def _sentence_lengths(answer: str) -> tuple[list[int], int]:
     sentences = _sentences(answer)
-    limit = 20 if _looks_procedural(answer) else 25
-    violations = sum(len(_words(sentence)) > limit for sentence in sentences)
-    return _ratio(len(sentences), violations)
+    limit = (
+        _PROCEDURE_SENTENCE_LIMIT
+        if _looks_procedural(answer)
+        else _DESCRIPTIVE_SENTENCE_LIMIT
+    )
+    lengths = [len(_words(sentence)) for sentence in sentences]
+    return lengths, limit
+
+
+def average_sentence_length(prompt: str, answer: str) -> float:
+    """Return the mean number of words per sentence."""
+
+    lengths, _ = _sentence_lengths(answer)
+    return sum(lengths) / len(lengths) if lengths else 0.0
+
+
+def long_sentence_fraction(prompt: str, answer: str) -> float:
+    """Return the fraction of sentences over the inferred STE word limit."""
+
+    lengths, limit = _sentence_lengths(answer)
+    return sum(length > limit for length in lengths) / len(lengths) if lengths else 0.0
 
 
 def sentence_mechanics(prompt: str, answer: str) -> float:
@@ -87,10 +107,14 @@ def sentence_mechanics(prompt: str, answer: str) -> float:
 
     sentences = _sentences(answer)
     violations = sum(
-        bool(_CONTRACTION.search(sentence) or ";" in sentence or _LATIN.search(sentence))
+        bool(
+            _CONTRACTION.search(sentence)
+            or ";" in sentence
+            or _LATIN.search(sentence)
+        )
         for sentence in sentences
     )
-    return _ratio(len(sentences), violations)
+    return _compliance_fraction(len(sentences), violations)
 
 
 def verb_forms_and_modals(prompt: str, answer: str) -> float:
@@ -106,18 +130,19 @@ def verb_forms_and_modals(prompt: str, answer: str) -> float:
         )
         for sentence in sentences
     )
-    return _ratio(len(sentences), violations)
+    return _compliance_fraction(len(sentences), violations)
 
 
 def document_limits(prompt: str, answer: str) -> float:
-    """Check the six-sentence maximum for descriptive paragraphs."""
+    """Check the sentence maximum for descriptive paragraphs."""
 
     paragraphs = [part.strip() for part in re.split(r"\n\s*\n", answer) if part.strip()]
     violations = sum(
-        len(_sentences(paragraph)) > 6 and not _looks_like_vertical_list(paragraph)
+        len(_sentences(paragraph)) > _PARAGRAPH_SENTENCE_LIMIT
+        and not _looks_like_vertical_list(paragraph)
         for paragraph in paragraphs
     )
-    return _ratio(len(paragraphs), violations)
+    return _compliance_fraction(len(paragraphs), violations)
 
 
 def _looks_like_vertical_list(text: str) -> bool:
@@ -133,12 +158,17 @@ def procedure_syntax(prompt: str, answer: str) -> float:
     """Flag a clear command followed by a trailing condition."""
 
     sentences = _sentences(answer)
-    violations = 0
-    for sentence in sentences:
-        condition = _TRAILING_CONDITION.search(sentence)
-        if condition and condition.start() > 0 and _IMPERATIVE_START.search(sentence):
-            violations += 1
-    return _ratio(len(sentences), violations)
+    violations = sum(_has_trailing_condition(sentence) for sentence in sentences)
+    return _compliance_fraction(len(sentences), violations)
+
+
+def _has_trailing_condition(sentence: str) -> bool:
+    condition = _TRAILING_CONDITION.search(sentence)
+    return bool(
+        condition
+        and condition.start() > 0
+        and _IMPERATIVE_START.search(sentence)
+    )
 
 
 def terminology_consistency(prompt: str, answer: str) -> float:
@@ -147,7 +177,7 @@ def terminology_consistency(prompt: str, answer: str) -> float:
     words = {word.lower() for word in _words(answer)}
     present = [group & words for group in _TERM_GROUPS if group & words]
     violations = sum(len(group) > 1 for group in present)
-    return _ratio(len(present), violations)
+    return _compliance_fraction(len(present), violations)
 
 
 def controlled_vocabulary_scorer(
@@ -160,13 +190,16 @@ def controlled_vocabulary_scorer(
     Terms in the prompt are also treated as candidate domain terms.
     """
 
-    approved = {word.lower() for word in approved_words}
-    configured_terms = {term.lower() for term in technical_terms}
+    approved = {word.casefold() for word in approved_words}
+    configured_terms = {term.casefold() for term in technical_terms}
 
     def scorer(prompt: str, answer: str) -> float:
-        allowed = approved | configured_terms | {word.lower() for word in _words(prompt)}
+        allowed = approved | configured_terms | {
+            word.casefold() for word in _words(prompt)
+        }
         words = _words(answer)
-        return _ratio(len(words), sum(word.lower() not in allowed for word in words))
+        violations = sum(word.casefold() not in allowed for word in words)
+        return _compliance_fraction(len(words), violations)
 
     return scorer
 
@@ -183,7 +216,8 @@ def controlled_vocabulary_scorer_from_file(
 
 RULE_SCORERS: dict[str, Scorer] = {
     "controlled_vocabulary": controlled_vocabulary_scorer_from_file(),
-    "sentence_length": sentence_length,
+    "average_sentence_length": average_sentence_length,
+    "long_sentence_fraction": long_sentence_fraction,
     "sentence_mechanics": sentence_mechanics,
     "verb_forms_and_modals": verb_forms_and_modals,
     "procedure_syntax": procedure_syntax,
@@ -197,8 +231,9 @@ __all__ = [
     "controlled_vocabulary_scorer",
     "controlled_vocabulary_scorer_from_file",
     "document_limits",
+    "average_sentence_length",
+    "long_sentence_fraction",
     "procedure_syntax",
-    "sentence_length",
     "sentence_mechanics",
     "terminology_consistency",
     "verb_forms_and_modals",
