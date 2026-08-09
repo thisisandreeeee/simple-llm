@@ -31,7 +31,19 @@ source .venv/bin/activate
 
 The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
 
-Source files will be added in later phases.
+Create a [Weights & Biases](https://wandb.ai/) account and API key. Then copy the environment template and set your API key and W&B user or team:
+
+```bash
+cp .env.example .env
+```
+
+Load the variables before you run an experiment:
+
+```bash
+set -a
+source .env
+set +a
+```
 
 ## Experiments
 
@@ -60,8 +72,8 @@ Done:
 
 Todo:
 
-- Upgrade to use Qwen3-4B on remote GPUs
-- Add experiment tracking and artifact management
+- Add W&B artifact management for model checkpoints
+- Run Qwen3-4B on Modal L4 GPU
 - Build LLM judge scorer
 
 Later:
