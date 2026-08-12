@@ -20,13 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EVALS = ROOT / "data/evals.jsonl"
 SEED = 42
 MAX_NEW_TOKENS = 2048
-GENERATION = {
-    "do_sample": True,
-    "temperature": 0.0,
-    "top_p": 0.8,
-    "top_k": 20,
-    "max_new_tokens": MAX_NEW_TOKENS,
-}
+GENERATION = {"do_sample": False, "max_new_tokens": MAX_NEW_TOKENS}
 
 Generator = Callable[[str, str | None], dict[str, Any]]
 

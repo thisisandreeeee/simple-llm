@@ -1,4 +1,4 @@
-"""Run the Qwen3-4B benchmark on Modal without an added system prompt."""
+"""Run the Qwen3.5-4B benchmark on Modal without an added system prompt."""
 
 import sys
 from pathlib import Path
@@ -10,8 +10,8 @@ from simple_llm.inference import run_experiment
 
 if __name__ == "__main__":
     run_experiment(
-        experiment="03_qwen3_4b_base",
-        model="Qwen/Qwen3-4B",
+        experiment="03_qwen35_4b_base",
+        model="Qwen/Qwen3.5-4B",
         condition="base_raw",
         default_backend="modal",
         description=__doc__,
