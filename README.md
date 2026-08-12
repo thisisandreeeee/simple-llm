@@ -44,10 +44,23 @@ uv run python experiments/01_qwen3_06b_base.py
 Run Qwen3-0.6B with the [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) system prompt:
 
 ```bash
-uv run python experiments/02_qwen3_06b_simple_english.py
+uv run python experiments/02_qwen3_06b_sysprompt.py
 ```
 
 Add `--limit N` to either command for a smaller run.
+
+Run Qwen3-4B on a Modal L4 GPU:
+
+```bash
+uv run modal setup
+uv run python experiments/03_qwen3_4b_base.py --limit 2
+uv run python experiments/03_qwen3_4b_base.py
+uv run python experiments/04_qwen3_4b_sysprompt.py
+```
+
+Model weights are cached in the `simple-llm-huggingface-cache` Modal Volume.
+Predictions, configuration, and summaries are still written locally to `runs/`.
+Use `--gpu A10` or `--gpu L40S` to compare throughput and cost with L4.
 
 ## Backlog
 
@@ -57,22 +70,17 @@ Done:
 - Build evaluation set of 100 prompts stored in data/evals.jsonl; stratified by subject, difficulty, expected response length, need for technical terminology, risk of oversimplification
 - Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
 - Benchmark Qwen3-0.6B (base vs enhanced system prompt) on all 100 prompts and run scorer
+- Run Qwen3-4B on Modal L4 GPU
 
 Todo:
 
-- Upgrade to use Qwen3-4B on remote GPUs
-- Add experiment tracking and artifact management
-- Build LLM judge scorer
+- Build LLM judge scorer (GEval)
+- Run end to end benchmarks
 
 Later:
 
-- Generate SFT training data of 1-3k prompts using teacher model: first call for correct answer, second call for simplification
-- Implement SFT script
-- Run local training smoke test: loss decreases, resume from checkpoint, e2e evaluation
-- Run training on colab (or other GPU platform)
-- Evaluate SFT vs base model using scorer (rule-based and LLM judge)
-- Evaluate using benchmarks: viol/100w, MMLU-Pro
+- Implement post training with dataset of 1-3k prompts: SFT vs. DPO
+- Evaluate post trained model vs base model using rule-based scorer, LLM-as-a-judge, and benchmarks (viol/100w, MMLU-Pro)
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
-- Add DPO
-- Add GRPO
+- Implement RLAIF with GRPO
 - Serve on vLLM
