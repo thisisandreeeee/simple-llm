@@ -47,6 +47,9 @@ _TERM_GROUPS = (
 _PROCEDURE_SENTENCE_LIMIT = 20
 _DESCRIPTIVE_SENTENCE_LIMIT = 25
 _PARAGRAPH_SENTENCE_LIMIT = 6
+_DEFAULT_APPROVED_WORDS = (
+    Path(__file__).resolve().parents[2] / "data/ste_approved_words.txt"
+)
 
 
 def _mask_code(text: str) -> str:
@@ -219,7 +222,7 @@ def controlled_vocabulary_scorer(
 
 
 def controlled_vocabulary_scorer_from_file(
-    path: str | Path = "data/ste_approved_words.txt",
+    path: str | Path = _DEFAULT_APPROVED_WORDS,
     technical_terms: Iterable[str] = (),
 ) -> Scorer:
     """Build a vocabulary scorer from an extracted STE word-list file."""
