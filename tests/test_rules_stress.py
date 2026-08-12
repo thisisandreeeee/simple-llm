@@ -64,7 +64,6 @@ def test_multiword_configured_technical_term_is_allowed() -> None:
     assert scorer("", "The message broker moves data.") == 1.0
 
 
-@pytest.mark.xfail(strict=True, reason="the default glossary path depends on the cwd")
 def test_default_glossary_loads_outside_repository_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
