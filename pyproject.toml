@@ -5,6 +5,7 @@ description = "Post-train and evaluate a small language model for clear, simple 
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "deepeval==4.1.4",
     "modal>=1.5.3",
     "pydantic>=2.12.5",
     "torch>=2.0.0",
