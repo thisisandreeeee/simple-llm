@@ -60,8 +60,6 @@ uv run python experiments/04_qwen35_4b_sysprompt.py
 
 Model weights are cached in the `simple-llm-huggingface-cache` Modal Volume.
 Use `--gpu A10` or `--gpu L40S` to compare throughput and cost with L4.
-Qwen3.5 runs use the text-only causal-language-model path and require Transformers 5.14.1 or newer.
-Each run writes `config.json`, `predictions.jsonl`, and `run_summary.json` under `runs/`.
 
 ## Backlog
 
