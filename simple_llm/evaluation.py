@@ -275,10 +275,9 @@ def run_experiment(
 
         results: list[dict[str, Any]] = []
         failed_count = 0
-        incremental_predictions = wandb.Table(
+        predictions = wandb.Table(
             columns=list(PREDICTION_COLUMNS), log_mode="INCREMENTAL"
         )
-        run.define_metric("predictions_incr", summary="none")
         for index, item in enumerate(evals, 1):
             result: dict[str, Any] = {
                 "id": item["id"],
@@ -311,24 +310,16 @@ def run_experiment(
                 print(f"[{index}/{len(evals)}] {item['id']}: {result['error']}")
             results.append(result)
             failed_count += int("error" in result)
-            incremental_predictions.add_data(*_prediction_row(result))
+            predictions.add_data(*_prediction_row(result))
             run.log(
                 {
-                    "predictions_incr": incremental_predictions,
+                    "predictions": predictions,
                     "progress/completed": index,
                     "progress/failed_count": failed_count,
                 },
                 step=index,
             )
 
-        run.log(
-            {
-                "predictions": wandb.Table(
-                    columns=list(PREDICTION_COLUMNS),
-                    data=[_prediction_row(result) for result in results],
-                )
-            }
-        )
         run.summary.update(_flatten(summary(results)))
 
 
