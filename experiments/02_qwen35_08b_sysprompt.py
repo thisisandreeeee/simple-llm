@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT))
 from simple_llm.experiment import run_experiment
 
 if __name__ == "__main__":
-    prompt = ROOT / "prompts/simple_english.md"
+    prompt = ROOT / "data/simple_english.md"
     run_experiment(
         experiment="02_qwen35_08b_simple_english",
         model="Qwen/Qwen3.5-0.8B",
