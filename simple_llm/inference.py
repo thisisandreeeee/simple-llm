@@ -300,7 +300,7 @@ def run_experiment(
             evals, generator, run_dir / "predictions.jsonl", system_prompt
         )
         wall_seconds = time.perf_counter() - started
-        (run_dir / "summary.json").write_text(
+        (run_dir / "run_summary.json").write_text(
             json.dumps(summary(results, wall_seconds), indent=2) + "\n",
             encoding="utf-8",
         )
