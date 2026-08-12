@@ -8,7 +8,7 @@ dependencies = [
     "modal>=1.5.3",
     "pydantic>=2.12.5",
     "torch>=2.0.0",
-    "transformers>=4.51.0",
+    "transformers>=5.14.1",
     "trl[peft]>=1.9.2",
 ]
 
