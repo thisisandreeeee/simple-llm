@@ -93,10 +93,11 @@ Done:
 - Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
 - Benchmark Qwen3.5-0.8B (base vs enhanced system prompt) on all 100 prompts and run scorer
 - Run Qwen3.5-4B on Modal L4 GPU
+- Build LLM judge scorer (GEval)
 
 Todo:
 
-- Build LLM judge scorer (GEval)
+- Analyse LLM judge scores
 - Run end to end benchmarks
 
 Later:
