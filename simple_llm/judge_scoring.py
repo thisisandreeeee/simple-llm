@@ -13,6 +13,9 @@ from statistics import mean
 from typing import Any
 
 DEFAULT_CONCURRENCY = 50
+DEFAULT_RETRY_LIMIT = 2
+JUDGE_TEMPERATURE = 0.0
+_INVALID_JSON_ERROR = "Evaluation LLM outputted an invalid JSON"
 
 _DIMENSIONS = {
     "technical_adequacy": {
@@ -42,10 +45,12 @@ _DIMENSIONS = {
             "scope, audience, and requested format."
         ),
         "steps": (
-            "Identify the main task requested by the user.",
-            "Check whether the answer addresses that task directly.",
-            "Penalize irrelevant content, missing requested parts, and wrong format.",
-            "Assign a score from 1 to 5.",
+            "List every explicit task, requested topic, constraint, audience requirement, and format requirement in the prompt.",
+            "Check whether the answer substantively addresses each requested item; merely mentioning an item or providing a matching heading does not count as fulfilling it.",
+            "Check whether instructions, examples, or explanations are usable at the level requested by the user rather than generic placeholders that require missing information.",
+            "Penalize missing requested items, irrelevant meta-commentary, invented requirements, unnecessary detours, and violations of explicit scope or format.",
+            "Judge fulfillment separately from technical correctness, but do not count content as fulfilling a requested item when it discusses a different concept under the requested label.",
+            "Assign a score from 1 to 5 using the rubric. In the reason, identify the most important fulfilled and unfulfilled requirements.",
         ),
         "rubric": (
             (1, "The answer does not address the requested task."),
@@ -83,10 +88,13 @@ _DIMENSIONS = {
             "removing necessary meaning or technical precision."
         ),
         "steps": (
-            "Check whether the answer uses direct wording and clear agents or actions.",
-            "Check whether each sentence or list item carries a focused idea.",
-            "Penalize needless complexity, hedging, and verbosity, but do not penalize necessary technical terms.",
-            "Assign a score from 1 to 5.",
+            "Evaluate simplicity at the level of the whole answer, not only individual sentences.",
+            "Check whether the answer uses direct wording, clear agents or actions, and necessary technical terms without avoidable abstraction.",
+            "Check whether the amount of detail and structure is proportionate to the user's request.",
+            "Penalize repetition, fragmented or choppy presentation, unnecessary headings, excessive itemization, meta-commentary, redundant summaries, and repeated sentence patterns.",
+            "Do not award the highest score merely because sentences are short; the complete answer must also be concise, cohesive, and free of unnecessary content.",
+            "Do not penalize technical terminology, examples, or structure when they materially improve precision or usability.",
+            "Assign a score from 1 to 5 using the rubric. In the reason, identify any answer-level excess complexity or redundancy that affected the score.",
         ),
         "rubric": (
             (1, "The answer is needlessly complex, indirect, or verbose."),
@@ -118,8 +126,10 @@ def build_metrics(model: str) -> dict[str, Any]:
     """Build the fixed G-Eval metrics used by this project."""
 
     from deepeval.metrics import GEval
+    from deepeval.models import DeepSeekModel
     from deepeval.test_case import SingleTurnParams
 
+    judge_model = DeepSeekModel(model=model, temperature=JUDGE_TEMPERATURE)
     return {
         name: GEval(
             name=name,
@@ -127,7 +137,7 @@ def build_metrics(model: str) -> dict[str, Any]:
             evaluation_steps=list(spec["steps"]),
             rubric=_rubrics(spec["rubric"]),
             evaluation_params=[SingleTurnParams.INPUT, SingleTurnParams.ACTUAL_OUTPUT],
-            model=model,
+            model=judge_model,
             threshold=None,
             async_mode=True,
         )
@@ -135,12 +145,13 @@ def build_metrics(model: str) -> dict[str, Any]:
     }
 
 
-def _provenance(model: str) -> dict[str, str]:
+def _provenance(model: str) -> dict[str, Any]:
     rubric = json.dumps(_DIMENSIONS, sort_keys=True, separators=(",", ":"))
     return {
         "framework": "deepeval",
         "framework_version": importlib.metadata.version("deepeval"),
         "model": model,
+        "temperature": JUDGE_TEMPERATURE,
         "rubric_sha256": hashlib.sha256(rubric.encode()).hexdigest(),
     }
 
@@ -155,18 +166,21 @@ def judge_predictions(
     scores_path: Path,
     model: str,
     concurrency: int = DEFAULT_CONCURRENCY,
+    retry_limit: int = DEFAULT_RETRY_LIMIT,
 ) -> dict[str, Any]:
     """Judge rule-valid predictions and incrementally write judge scores."""
 
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
+    if retry_limit < 0:
+        raise ValueError("retry_limit must be at least 0")
 
     predictions = _load_jsonl(predictions_path)
     rule_artifact = json.loads(rule_scores_path.read_text(encoding="utf-8"))
     rule_results = {item["id"]: item for item in rule_artifact["results"]}
     return asyncio.run(
         _judge_predictions(
-            predictions, rule_results, scores_path, model, concurrency
+            predictions, rule_results, scores_path, model, concurrency, retry_limit
         )
     )
 
@@ -177,6 +191,7 @@ async def _judge_predictions(
     scores_path: Path,
     model: str,
     concurrency: int,
+    retry_limit: int,
 ) -> dict[str, Any]:
     semaphore = asyncio.Semaphore(concurrency)
 
@@ -207,7 +222,9 @@ async def _judge_predictions(
             else:
                 # DeepEval metrics store score and reason on the instance.
                 metrics = build_metrics(model)
-                result.update(await _measure_metrics(metrics, prediction, semaphore))
+                result.update(
+                    await _measure_metrics(metrics, prediction, semaphore, retry_limit)
+                )
         return index, result
 
     results: list[dict[str, Any] | None] = [None] * len(predictions)
@@ -232,6 +249,7 @@ async def _measure_metrics(
     metrics: dict[str, Any],
     prediction: dict[str, Any],
     semaphore: asyncio.Semaphore,
+    retry_limit: int,
 ) -> dict[str, Any]:
     from deepeval.test_case import LLMTestCase
 
@@ -242,19 +260,24 @@ async def _measure_metrics(
     async def measure_one(
         name: str, metric: Any
     ) -> tuple[str, float | None, str | None, str | None]:
-        try:
-            async with semaphore:
-                await metric.a_measure(test_case)
-                if metric.score is None:
-                    raise ValueError("DeepEval returned no score")
-                return (
-                    name,
-                    float(metric.score),
-                    str(metric.reason) if metric.reason else None,
-                    None,
-                )
-        except Exception as exc:  # Preserve successful dimensions if one call fails.
-            return name, None, None, f"{type(exc).__name__}: {exc}"
+        for attempt in range(retry_limit + 1):
+            try:
+                async with semaphore:
+                    await metric.a_measure(test_case)
+                    if metric.score is None:
+                        raise ValueError("DeepEval returned no score")
+                    return (
+                        name,
+                        float(metric.score),
+                        str(metric.reason) if metric.reason else None,
+                        None,
+                    )
+            except (
+                Exception
+            ) as exc:  # Preserve successful dimensions if one call fails.
+                if attempt == retry_limit or _INVALID_JSON_ERROR not in str(exc):
+                    return name, None, None, f"{type(exc).__name__}: {exc}"
+        raise AssertionError("unreachable")
 
     measured = await asyncio.gather(
         *(measure_one(name, metric) for name, metric in metrics.items())
@@ -277,6 +300,9 @@ def _summarize(results: list[dict[str, Any]], model: str) -> dict[str, Any]:
     invalid = [
         item for item in results if item.get("validity", {}).get("valid") is False
     ]
+    fully_scored = [
+        item for item in scored if all(name in item["scores"] for name in _DIMENSIONS)
+    ]
     all_scores: dict[str, list[float]] = defaultdict(list)
     domain_scores: dict[str, dict[str, list[float]]] = defaultdict(
         lambda: defaultdict(list)
@@ -293,6 +319,13 @@ def _summarize(results: list[dict[str, Any]], model: str) -> dict[str, Any]:
         "judge": _provenance(model),
         "prompt_count": len(results),
         "scored_count": len(scored),
+        "fully_scored_count": len(fully_scored),
+        "partially_scored_count": len(scored) - len(fully_scored),
+        "dimension_scored_counts": {
+            name: sum(name in item["scores"] for item in scored)
+            for name in sorted(_DIMENSIONS)
+        },
+        "failed_dimension_count": sum(len(item.get("errors", {})) for item in results),
         "failed_count": sum("error" in item or "errors" in item for item in results),
         "invalid_count": len(invalid),
         "invalid_reasons": dict(
@@ -326,9 +359,20 @@ def main() -> None:
         default=DEFAULT_CONCURRENCY,
         help=f"Maximum concurrent judge requests (default: {DEFAULT_CONCURRENCY}).",
     )
+    parser.add_argument(
+        "--retry-limit",
+        type=int,
+        default=DEFAULT_RETRY_LIMIT,
+        help=(
+            "Retries per dimension after invalid judge JSON "
+            f"(default: {DEFAULT_RETRY_LIMIT})."
+        ),
+    )
     args = parser.parse_args()
     if args.concurrency < 1:
         parser.error("--concurrency must be at least 1")
+    if args.retry_limit < 0:
+        parser.error("--retry-limit must be at least 0")
     output = args.output or args.predictions.with_name("judge_scores.json")
     judge_predictions(
         args.predictions,
@@ -336,6 +380,7 @@ def main() -> None:
         output,
         args.model,
         args.concurrency,
+        args.retry_limit,
     )
     print(f"Wrote {output}")
 
@@ -344,4 +389,9 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["DEFAULT_CONCURRENCY", "build_metrics", "judge_predictions"]
+__all__ = [
+    "DEFAULT_CONCURRENCY",
+    "DEFAULT_RETRY_LIMIT",
+    "build_metrics",
+    "judge_predictions",
+]

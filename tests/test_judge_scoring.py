@@ -14,6 +14,12 @@ class FakeMetric:
         assert test_case.actual_output == "A pump moves liquid."
 
 
+def test_judge_uses_zero_temperature() -> None:
+    metrics = judge_scoring.build_metrics("deepseek-chat")
+
+    assert all(metric.model.temperature == 0.0 for metric in metrics.values())
+
+
 def test_judge_scores_only_rule_valid_predictions(tmp_path, monkeypatch) -> None:
     predictions = tmp_path / "predictions.jsonl"
     predictions.write_text(
@@ -189,3 +195,75 @@ def test_judge_preserves_successful_dimensions(tmp_path, monkeypatch) -> None:
     assert result["results"][0]["errors"] == {
         "failed": "RuntimeError: rate limited"
     }
+
+
+def test_judge_retries_invalid_json_and_reports_partial_scores(
+    tmp_path, monkeypatch
+) -> None:
+    predictions = tmp_path / "predictions.jsonl"
+    predictions.write_text(
+        json.dumps(
+            {
+                "id": "ONE-01",
+                "domain": "ONE",
+                "prompt": "Explain a pump.",
+                "response": "A pump moves liquid.",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    rule_scores = tmp_path / "rule_scores.json"
+    rule_scores.write_text(
+        json.dumps(
+            {
+                "results": [
+                    {
+                        "id": "ONE-01",
+                        "validity": {"valid": True, "reasons": []},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class RetryMetric(FakeMetric):
+        attempts = 0
+
+        async def a_measure(self, test_case) -> None:
+            self.attempts += 1
+            if self.attempts < 3:
+                raise RuntimeError(
+                    "Evaluation LLM outputted an invalid JSON. Please use a better evaluation model."
+                )
+
+    retry_metric = RetryMetric(0.75, "Good after retry.")
+    monkeypatch.setattr(
+        judge_scoring,
+        "build_metrics",
+        lambda model: {
+            "technical_adequacy": retry_metric,
+            "task_fulfillment": FakeMetric(1.0, "Complete."),
+        },
+    )
+
+    result = judge_scoring.judge_predictions(
+        predictions,
+        rule_scores,
+        tmp_path / "judge_scores.json",
+        "fake",
+        retry_limit=2,
+    )
+
+    assert retry_metric.attempts == 3
+    assert result["scored_count"] == 1
+    assert result["fully_scored_count"] == 0
+    assert result["partially_scored_count"] == 1
+    assert result["dimension_scored_counts"] == {
+        "clarity_and_coherence": 0,
+        "semantic_simplicity": 0,
+        "task_fulfillment": 1,
+        "technical_adequacy": 1,
+    }
+    assert result["failed_dimension_count"] == 0
