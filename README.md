@@ -47,8 +47,10 @@ Judge a completed run with up to 50 concurrent requests:
 ```bash
 uv run python -m simple_llm.judge_scoring \
   runs/RUN/predictions.jsonl runs/RUN/rule_scores.json \
-  --model "$DEEPSEEK_MODEL_NAME" --concurrency 50
+  --model "$DEEPSEEK_MODEL_NAME" --concurrency 50 --retry-limit 2
 ```
+
+The retry limit applies only when the judge returns invalid JSON; other failures are preserved immediately.
 
 The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
 
