@@ -29,6 +29,29 @@ uv sync
 source .venv/bin/activate
 ```
 
+To run the DeepSeek judge, copy the example environment file, add your API key,
+and export its variables into the current shell:
+
+```bash
+cp .env.example .env
+$EDITOR .env
+set -a
+source .env
+set +a
+```
+
+`.env` is gitignored. Keep the API key there and do not commit it.
+
+Judge a completed run with up to 50 concurrent requests:
+
+```bash
+uv run python -m simple_llm.judge_scoring \
+  runs/RUN/predictions.jsonl runs/RUN/rule_scores.json \
+  --model "$DEEPSEEK_MODEL_NAME" --concurrency 50 --retry-limit 2
+```
+
+The retry limit applies only when the judge returns invalid JSON; other failures are preserved immediately.
+
 The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
 
 Source files will be added in later phases.
@@ -70,10 +93,11 @@ Done:
 - Build simple english scorer: avg/max sentence length, response length, Flesch reading ease, percentage of long sentences, passive-voice estimate, complex-word ratio
 - Benchmark Qwen3.5-0.8B (base vs enhanced system prompt) on all 100 prompts and run scorer
 - Run Qwen3.5-4B on Modal L4 GPU
+- Build LLM judge scorer (GEval)
 
 Todo:
 
-- Build LLM judge scorer (GEval)
+- Analyse LLM judge scores
 - Run end to end benchmarks
 
 Later:
