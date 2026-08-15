@@ -146,17 +146,18 @@ Split by source, topic, and prompt family. Keep the existing 100-prompt evaluati
 
 ### Prompt coverage
 
-Cover the same subjects and failure modes as the evaluation dataset, but use different prompts and source material. Include definitions, comparisons, architecture decisions, troubleshooting, security guidance, code and CLI instructions, installation guides, and runbooks.
+Keep about half of the SFT prompts aligned with the evaluation subjects and failure modes, but use different prompts and source material. Use the remaining capacity for the broader subject and topic catalog in `data/sft_topics.json`. This adds writing variety without weakening technical coverage. Include definitions, comparisons, architecture decisions, troubleshooting, security guidance, code and CLI instructions, installation guides, and runbooks.
 
-Use this initial target mix:
+Use this initial prompt-intent mix:
 
-| Target category                                      | Share |
-| ---------------------------------------------------- | ----: |
-| Concise rewrites of correct but verbose answers      |   40% |
-| Corrected answers for substantive technical failures |   30% |
-| Procedures that preserve commands and prerequisites  |   15% |
-| Qualified comparisons and architecture decisions     |   10% |
-| Direct answers that replace meta-commentary          |    5% |
+| Prompt intent             | Share |
+| ------------------------ | ----: |
+| Explanation               |   25% |
+| Documentation              |   20% |
+| Troubleshooting            |   15% |
+| Procedure                  |   15% |
+| Comparison                 |   15% |
+| Misconception correction   |   10% |
 
 ### Target generation
 
