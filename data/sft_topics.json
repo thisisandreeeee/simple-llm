@@ -1,0 +1,62 @@
+{
+  "networking and internet": [
+    "DNS resolution and caching", "TCP congestion control", "IPv6 addressing", "BGP route policy", "NAT trade-offs", "TLS certificates", "service meshes", "packet capture", "MPLS forwarding", "VXLAN overlays", "HTTP caching", "network troubleshooting", "UDP behavior", "HTTP/2 multiplexing", "QUIC transport", "NTP time synchronization", "firewall rules", "load balancing", "subnetting", "Wi-Fi roaming"
+  ],
+  "machine learning": [
+    "gradient clipping", "model calibration", "embeddings", "mixture-of-experts", "attention mechanisms", "feature stores", "model registries", "overfitting", "cross-validation", "learning-rate schedules", "class imbalance", "data leakage", "regularization", "precision and recall", "ROC-AUC", "gradient descent", "batch normalization", "distributed training", "data preprocessing", "model drift"
+  ],
+  "data formats and APIs": [
+    "JSON Schema", "JSON Patch", "JSON Merge Patch", "REST pagination", "ETags", "API rate limiting", "OpenAPI", "GraphQL caching", "API versioning", "content negotiation", "webhooks", "idempotency keys", "HTTP status codes", "authentication headers", "webhook signatures", "cursor pagination", "content types", "request validation", "API error formats", "OpenAPI security schemes"
+  ],
+  "databases and data systems": [
+    "B-tree indexes", "transaction isolation", "foreign keys", "PostgreSQL MVCC", "streaming replication", "schema migrations", "query planning", "normalization", "optimistic concurrency", "dead tuples", "read replicas", "partitioning", "covering indexes", "deadlocks", "connection pools", "transaction boundaries", "backup and recovery", "sharding", "materialized views", "database constraints"
+  ],
+  "distributed systems": [
+    "CAP theorem", "Raft consensus", "linearizable reads", "quorums", "eventual consistency", "leader election", "two-phase commit", "gossip protocols", "logical clocks", "consistent hashing", "replication lag", "failure detectors", "idempotent operations", "backpressure", "distributed tracing", "exactly-once claims", "split-brain prevention", "clock synchronization", "leases", "CRDTs"
+  ],
+  "security and identity": [
+    "OAuth authorization code flow", "PKCE", "refresh-token rotation", "OpenID Connect", "JWT validation", "signing-key rotation", "HTTPS and TLS", "zero trust", "credential exposure", "CSRF protection", "rate-limit abuse", "session management", "password hashing", "mutual TLS", "secrets management", "security headers", "CORS", "threat modeling", "software supply-chain security", "key derivation"
+  ],
+  "cloud and infrastructure": [
+    "cloud autoscaling", "AWS VPC routing", "Kubernetes probes", "HPA metrics", "IAM policy evaluation", "container networking", "serverless timeouts", "ingress TLS", "infrastructure as code", "managed databases", "deployment rollbacks", "RBAC", "object storage", "continuous deployment", "centralized logging", "service accounts", "backup policies", "network policies", "observability", "cloud cost controls"
+  ],
+  "programming languages and runtimes": [
+    "JIT compilation", "garbage collection", "Python's GIL", "C++ memory ordering", "asyncio scheduling", "Go goroutines", "bytecode execution", "polymorphic dispatch", "memory leaks", "generational collection", "type systems", "runtime profiling", "exception handling", "ownership and borrowing", "generics", "tail calls", "JVM class loading", "reference counting", "futures and promises", "ABI compatibility"
+  ],
+  "developer tools": [
+    "Git merge and rebase", "interactive rebase", "lockfiles", "Docker multi-stage builds", "remote debugging", "Git worktrees", "CI pipeline caching", "pre-commit hooks", "branching workflows", "container images", "dependency pinning", "build artifacts", "code review", "semantic versioning", "release tags", "build systems", "test isolation", "dependency updates", "changelogs", "issue triage"
+  ],
+  "software architecture": [
+    "microservices and modular monoliths", "event-driven architecture", "API gateways", "service meshes", "CQRS", "Strangler Fig migrations", "hexagonal architecture", "message queues", "publish-subscribe", "layered architecture", "architecture decisions", "deployment boundaries", "domain-driven design", "bounded contexts", "event sourcing", "anti-corruption layers", "bulkheads", "circuit breakers", "modular boundaries", "architecture fitness functions"
+  ],
+  "mathematics and statistics": [
+    "probability rules", "Bayes' theorem", "probability distributions", "linear regression", "correlation", "hypothesis tests", "confidence intervals", "sampling bias", "optimization", "dimensionality reduction", "matrices", "calculus", "numerical stability", "combinatorics", "graph theory", "descriptive statistics", "variance", "causal inference", "time-series analysis", "Markov chains"
+  ],
+  "natural sciences": [
+    "atomic structure", "chemical bonds", "pH and buffers", "chemical reactions", "thermodynamics", "phases of matter", "waves", "optics", "electromagnetism", "cell structure", "genetics", "evolution", "ecosystems", "climate cycles", "geology", "plate tectonics", "astronomy", "nuclear decay", "the scientific method", "laboratory measurement"
+  ],
+  "engineering and manufacturing": [
+    "force and torque", "stress and strain", "fatigue", "engineering tolerances", "sensors", "control loops", "electrical circuits", "batteries", "electric motors", "heat exchangers", "fluid flow", "pumps", "machining", "welding", "quality assurance", "preventive maintenance", "reliability", "failure mode analysis", "safety factors", "production bottlenecks"
+  ],
+  "business and operations": [
+    "organizational roles", "key performance indicators", "budgeting", "forecasting", "inventory control", "procurement", "vendor management", "service-level agreements", "escalation paths", "process mapping", "operational bottlenecks", "root-cause analysis", "change management", "risk registers", "audit trails", "customer support", "pricing basics", "cash flow", "capacity planning", "service operations"
+  ],
+  "workplace communication": [
+    "clear requirements", "meeting agendas", "decision records", "constructive feedback", "status updates", "email structure", "escalation messages", "conflict resolution", "handoffs", "technical documentation", "stakeholder updates", "presentations", "active listening", "note-taking", "prioritization", "remote collaboration", "incident communication", "plain language", "inclusive writing", "project proposals"
+  ],
+  "education and learning": [
+    "retrieval practice", "spaced repetition", "feedback", "rubrics", "lesson objectives", "learning misconceptions", "worked examples", "cognitive load", "formative assessment", "summative assessment", "study planning", "note-taking", "source evaluation", "group work", "tutoring", "motivation", "reading strategies", "writing outlines", "concept maps", "metacognition"
+  ],
+  "household and consumer systems": [
+    "refrigerator operation", "washing machines", "thermostats", "circuit breakers", "water heaters", "plumbing leaks", "smoke alarms", "air filters", "home insulation", "appliance energy use", "rechargeable batteries", "Wi-Fi router placement", "printer troubleshooting", "recycling systems", "food storage", "basic tool safety", "furniture assembly", "home inventories", "product warranties", "household maintenance"
+  ],
+  "transport and logistics": [
+    "route planning", "inventory routing", "shipping labels", "warehouse picking", "fleet maintenance", "public transit", "traffic flow", "fuel efficiency", "electric-vehicle charging", "tire pressure", "navigation systems", "cold-chain logistics", "customs basics", "packaging", "last-mile delivery", "schedule planning", "safety checks", "travel itineraries", "delivery delays", "transport capacity"
+  ],
+  "history and geography": [
+    "maps", "latitude and longitude", "time zones", "river systems", "urbanization", "trade routes", "the Industrial Revolution", "the printing press", "migration", "agriculture", "maritime exploration", "archaeology", "primary sources", "historical causation", "borders", "population density", "natural hazards", "cultural diffusion", "historical timelines", "geographic information systems"
+  ],
+  "writing and information design": [
+    "paragraph structure", "topic sentences", "headings", "tables", "checklists", "instructions", "definitions", "examples", "diagrams", "summaries", "active voice", "ambiguity", "editing", "proofreading", "audience analysis", "information hierarchy", "accessibility", "citation basics", "document templates", "content organization"
+  ]
+}
