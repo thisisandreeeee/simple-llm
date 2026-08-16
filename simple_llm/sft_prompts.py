@@ -14,6 +14,8 @@ from difflib import SequenceMatcher
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .llm_runtime import TEACHER_MODEL, create_deepseek_model, run_concurrently
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DEFAULT_COUNT = 3_000
@@ -424,8 +426,6 @@ async def _generate_prompts_async(
     retry_limit: int,
     resume: bool,
 ) -> list[PromptRecord]:
-    from deepeval.models import DeepSeekModel
-
     if batch_size < 1 or concurrency < 1 or retry_limit < 0:
         raise ValueError("batch_size and concurrency must be positive; retry_limit cannot be negative")
     existing = _load_prompt_records(output) if resume else []
@@ -437,44 +437,36 @@ async def _generate_prompts_async(
     if not pending:
         return sorted(existing, key=lambda record: record.id)
 
-    model = DeepSeekModel(model=TEACHER_MODEL, temperature=0.7)
-    semaphore = asyncio.Semaphore(concurrency)
+    model = create_deepseek_model(temperature=0.7)
     batches = [pending[index : index + batch_size] for index in range(0, len(pending), batch_size)]
 
     async def generate_one(
-        batch_index: int, batch: list[PromptSpec]
+        item: tuple[int, list[PromptSpec]]
     ) -> tuple[int, list[GeneratedPrompt]]:
-        async with semaphore:
-            return batch_index, await _generate_prompt_batch(
-                model, batch, eval_prompts, retry_limit
-            )
+        batch_index, batch = item
+        return batch_index, await _generate_prompt_batch(
+            model, batch, eval_prompts, retry_limit
+        )
 
     records = list(existing)
-    tasks = [
-        asyncio.create_task(generate_one(index, batch))
-        for index, batch in enumerate(batches)
-    ]
-    try:
-        for completed in asyncio.as_completed(tasks):
-            batch_index, generated = await completed
-            batch_specs = batches[batch_index]
-            generated_by_id = {item.id: item for item in generated}
-            with output.open("a", encoding="utf-8") as handle:
-                for spec in batch_specs:
-                    prompt = generated_by_id[spec.id].prompt
-                    if _is_duplicate(prompt, known_prompts):
-                        raise ValueError(
-                            f"generated prompt duplicates an existing prompt: {spec.id}"
-                        )
-                    record = PromptRecord(id=spec.id, prompt=prompt)
-                    handle.write(record.model_dump_json() + "\n")
-                    records.append(record)
-                    known_prompts.append(prompt)
-    except BaseException:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        raise
+
+    async def save_batch(result: tuple[int, list[GeneratedPrompt]]) -> None:
+        batch_index, generated = result
+        batch_specs = batches[batch_index]
+        generated_by_id = {item.id: item for item in generated}
+        with output.open("a", encoding="utf-8") as handle:
+            for spec in batch_specs:
+                prompt = generated_by_id[spec.id].prompt
+                if _is_duplicate(prompt, known_prompts):
+                    raise ValueError(f"generated prompt duplicates an existing prompt: {spec.id}")
+                record = PromptRecord(id=spec.id, prompt=prompt)
+                handle.write(record.model_dump_json() + "\n")
+                records.append(record)
+                known_prompts.append(prompt)
+
+    await run_concurrently(
+        enumerate(batches), generate_one, concurrency=concurrency, on_result=save_batch
+    )
     return sorted(records, key=lambda record: record.id)
 
 
