@@ -1,4 +1,4 @@
-"""Typed scaffolding and deterministic planning for SFT dataset generation."""
+"""Typed scaffolding and deterministic generation for SFT prompts."""
 
 from __future__ import annotations
 
