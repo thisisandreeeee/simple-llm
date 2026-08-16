@@ -54,7 +54,39 @@ The retry limit applies only when the judge returns invalid JSON; other failures
 
 The initial training stack uses [TRL](https://huggingface.co/docs/trl/) with its PEFT extra for LoRA-based post-training. uv installs its supporting packages, including Transformers, Accelerate, Datasets, PyTorch, and PEFT, from the checked-in lockfile.
 
-Source files will be added in later phases.
+## Generate the SFT dataset
+
+Configure the DeepSeek credentials described above before running the generation commands. The pipeline has three stages:
+
+1. Generate user prompts:
+
+   ```bash
+   uv run python -m simple_llm.sft_prompts --count 3000
+   ```
+
+   This writes prompts to `data/sft_prompts.jsonl`. Generation resumes from existing prompt IDs. Use `--no-resume` to regenerate the output.
+
+2. Generate assistant answers:
+
+   ```bash
+   uv run python -m simple_llm.sft_answers \
+     --count 3000 \
+     --prompts data/sft_prompts.jsonl \
+     --output data/sft_answers.jsonl
+   ```
+
+   Answers are generated for the first `--count` prompts and appended by ID. Rerunning the command resumes unfinished answers.
+
+3. Build the SFT dataset:
+
+   ```bash
+   uv run python -m simple_llm.sft_dataset \
+     --prompts data/sft_prompts.jsonl \
+     --answers data/sft_answers.jsonl \
+     --output data/sft_dataset.jsonl
+   ```
+
+   The output is JSONL with one `messages` field per row. Each row contains only a `user` message followed by an `assistant` message. Prompts without completed answers are skipped, so the dataset can be rebuilt while answer generation is still in progress.
 
 ## Experiments
 
@@ -94,15 +126,14 @@ Done:
 - Benchmark Qwen3.5-0.8B (base vs enhanced system prompt) on all 100 prompts and run scorer
 - Run Qwen3.5-4B on Modal L4 GPU
 - Build LLM judge scorer (GEval)
+- Analyse LLM judge scores
 
 Todo:
 
-- Analyse LLM judge scores
-- Run end to end benchmarks
+- Implement post training with dataset of 1-3k prompts: SFT vs. DPO
 
 Later:
 
-- Implement post training with dataset of 1-3k prompts: SFT vs. DPO
 - Evaluate post trained model vs base model using rule-based scorer, LLM-as-a-judge, and benchmarks (viol/100w, MMLU-Pro)
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
