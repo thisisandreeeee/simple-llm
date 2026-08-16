@@ -155,6 +155,10 @@ def test_answer_instruction_contains_key_points_and_ste_guidance() -> None:
     assert "12 to 20 words" in instruction
     assert "one or two sentences" in instruction
     assert "Do not use semicolons" in instruction
+    assert "Silently classify each passage" in instruction
+    assert "Keep one topic in each paragraph" in instruction
+    assert "Remove words that carry no fact" in instruction
+    assert "warning action or condition before" in instruction
 
 
 def test_answer_style_violations_identifies_repairable_problems() -> None:
@@ -186,6 +190,7 @@ def test_answer_repair_instruction_preserves_content() -> None:
     assert spec.key_points[0] in instruction
     assert "Do not add or remove information" in instruction
     assert "compliant text without rewriting it" in instruction
+    assert "every resulting sentence grammatically complete" in instruction
     assert "Do not increase the total word count" in instruction
     assert "The answer contains a semicolon." in instruction
 
@@ -251,7 +256,7 @@ def test_load_answer_records_migrates_required_facts(tmp_path) -> None:
     ]
 
 
-def test_generate_answers_writes_three_field_rows(tmp_path, monkeypatch) -> None:
+def test_generate_answers_writes_two_field_rows(tmp_path, monkeypatch) -> None:
     prompts = tmp_path / "prompts.jsonl"
     prompts.write_text(
         '{"id":"SFT-NET-0001","prompt":"Explain DNS caching clearly."}\n',
@@ -291,9 +296,20 @@ def test_generate_answers_writes_three_field_rows(tmp_path, monkeypatch) -> None
     row = json.loads(output.read_text(encoding="utf-8"))
     assert row == {
         "id": "SFT-NET-0001",
-        "key_points": ["A fact"],
         "final_response": "An answer.",
     }
+
+
+def test_load_answer_records_accepts_two_field_rows(tmp_path) -> None:
+    path = tmp_path / "sft_answers.jsonl"
+    path.write_text(
+        '{"id":"SFT-NET-0001","final_response":"An answer."}\n',
+        encoding="utf-8",
+    )
+
+    assert load_answer_records(path) == [
+        AnswerRecord(id="SFT-NET-0001", final_response="An answer.")
+    ]
 
 
 def test_generate_answers_resumes_by_prompt_id(tmp_path, monkeypatch) -> None:

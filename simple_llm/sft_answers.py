@@ -40,12 +40,12 @@ class AnswerSpec(AnswerSpecDraft):
 
 
 class AnswerRecord(BaseModel):
-    """Answer artifact persisted to the SFT JSONL file."""
+    """In-memory answer artifact; key points are never persisted."""
 
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(pattern=r"^SFT-[A-Z]+-\d{4}$")
-    key_points: list[KeyPoint] = Field(min_length=1, max_length=8)
+    key_points: list[KeyPoint] = Field(default_factory=list, max_length=8)
     final_response: str = Field(min_length=1)
 
 
@@ -132,9 +132,7 @@ User request:
 def answer_instruction(prompt: PromptRecord, spec: AnswerSpec) -> str:
     """Build the correctness-first instruction used to write one answer."""
 
-    contract = json.dumps(
-        spec.model_dump(exclude={"id"}), ensure_ascii=False, indent=2
-    )
+    contract = json.dumps(spec.model_dump(exclude={"id"}), ensure_ascii=False, indent=2)
     return f"""Write the final answer to the user request below.
 
 Return only JSON matching the GeneratedAnswer schema with exactly
@@ -152,6 +150,8 @@ introduce a new factual claim, recommendation, example, or preference unless it
 is necessary for accuracy. Do not add background or optional detail.
 
 Writing rules:
+- Silently classify each passage as procedural or descriptive. Do not mention
+  the classification. Keep procedural actions separate from descriptive text.
 - Use one main idea per sentence. It can include one closely related condition,
   qualification, or result.
 - Most descriptive sentences should contain 12 to 20 words.
@@ -165,6 +165,7 @@ Writing rules:
 - Put a condition before the action that depends on it.
 - Prefer active voice when the actor is known and important.
 - Use one term for one concept. Explain an unavoidable technical term at first use.
+- Keep one topic in each paragraph.
 - Do not put more than six sentences in one paragraph.
 - Use a vertical list for three or more parallel items.
 - Use numbered steps only when sequence is important.
@@ -172,6 +173,9 @@ Writing rules:
   requested procedure, example, or necessary qualification.
 - Do not add an introduction that repeats the user request.
 - Do not add a conclusion that only restates the answer.
+- Remove words that carry no fact, such as `simply`, `seamlessly`, `robust`,
+  `powerful`, `comprehensive`, `leverage`, and `it is worth noting`.
+- Put a warning action or condition before the description of its risk.
 - Keep the final response shorter than the combined key points unless expansion
   is necessary for an explanation or procedure.
 
@@ -218,9 +222,7 @@ def answer_repair_instruction(
 ) -> str:
     """Build one style-only repair instruction for a generated answer."""
 
-    contract = json.dumps(
-        spec.model_dump(exclude={"id"}), ensure_ascii=False, indent=2
-    )
+    contract = json.dumps(spec.model_dump(exclude={"id"}), ensure_ascii=False, indent=2)
     problems = "\n".join(f"- {violation}" for violation in violations)
     return f"""Rewrite the answer to correct only the listed style violations.
 
@@ -234,6 +236,8 @@ or the rewrite.
 Edit only the sentences or paragraphs that violate the listed rules. Copy all
 compliant text without rewriting it.
 - Split only an over-limit sentence. Do not split a compliant sentence.
+- Keep every resulting sentence grammatically complete. Each sentence must have
+  a subject and finite verb unless it is an imperative sentence.
 - Combine consecutive sentences shorter than 8 words when the result stays
   within the applicable limit.
 - Avoid repeating the same subject in consecutive sentences.
@@ -283,7 +287,9 @@ async def generate_answer(
     """Generate and validate one final answer from its factual specification."""
 
     if prompt.id != spec.id:
-        raise ValueError(f"prompt and answer spec IDs differ: {prompt.id!r}, {spec.id!r}")
+        raise ValueError(
+            f"prompt and answer spec IDs differ: {prompt.id!r}, {spec.id!r}"
+        )
     result, _ = await model.a_generate(
         answer_instruction(prompt, spec), schema=GeneratedAnswer
     )
@@ -291,9 +297,7 @@ async def generate_answer(
     violations = answer_style_violations(answer.final_response)
     if violations:
         result, _ = await model.a_generate(
-            answer_repair_instruction(
-                prompt, spec, answer.final_response, violations
-            ),
+            answer_repair_instruction(prompt, spec, answer.final_response, violations),
             schema=GeneratedAnswer,
         )
         answer = GeneratedAnswer.model_validate(result)
@@ -351,7 +355,7 @@ async def _generate_answers_async(
 
     async def save(record: AnswerRecord) -> None:
         with output.open("a", encoding="utf-8") as handle:
-            handle.write(record.model_dump_json() + "\n")
+            handle.write(record.model_dump_json(exclude={"key_points"}) + "\n")
         existing[record.id] = record
 
     await run_concurrently(pending, generate, concurrency=concurrency, on_result=save)
