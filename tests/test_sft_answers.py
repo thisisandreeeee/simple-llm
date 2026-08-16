@@ -1,8 +1,10 @@
 import asyncio
+import json
 
 import pytest
 from pydantic import ValidationError
 
+import simple_llm.sft_answers as sft_answers
 from simple_llm.sft_answers import (
     AnswerRecord,
     AnswerSpec,
@@ -18,17 +20,16 @@ def make_spec() -> AnswerSpec:
     return AnswerSpec(
         id="SFT-NET-0001",
         required_facts=["A resolver can cache DNS records."],
-        target_length="short",
     )
 
 
 def test_answer_spec_accepts_intermediate_contract() -> None:
     spec = make_spec()
 
-    assert spec.required_sections == []
-    assert spec.caveats_and_safety == []
-    assert spec.valid_commands_or_code == []
-    assert spec.prohibited_claims == []
+    assert spec.model_dump() == {
+        "id": "SFT-NET-0001",
+        "required_facts": ["A resolver can cache DNS records."],
+    }
 
 
 def test_answer_record_contains_only_the_final_target() -> None:
@@ -45,6 +46,12 @@ def test_answer_models_reject_invalid_shape() -> None:
         AnswerSpec(
             id="SFT-NET-0001",
             required_facts=[],
+        )
+
+    with pytest.raises(ValidationError):
+        AnswerSpec(
+            id="SFT-NET-0001",
+            required_facts=["A fact"],
             target_length="short",
         )
 
@@ -86,7 +93,6 @@ def test_generate_answer_spec_validates_prompt_id() -> None:
             return {
                 "id": prompt.id,
                 "required_facts": ["Resolvers cache DNS records."],
-                "target_length": "short",
             }, 0
 
     result = asyncio.run(generate_answer_spec(Model(), prompt))
@@ -103,8 +109,36 @@ def test_generate_answer_spec_rejects_mismatched_id() -> None:
             return {
                 "id": "SFT-NET-0002",
                 "required_facts": ["Resolvers cache DNS records."],
-                "target_length": "short",
             }, 0
 
     with pytest.raises(ValueError, match="IDs differ"):
         asyncio.run(generate_answer_spec(Model(), prompt))
+
+
+def test_generate_answer_specs_writes_requested_rows_in_prompt_order(tmp_path, monkeypatch) -> None:
+    prompts = tmp_path / "prompts.jsonl"
+    prompts.write_text(
+        "".join(
+            [
+                '{"id":"SFT-NET-0001","prompt":"Explain DNS caching clearly."}\n',
+                '{"id":"SFT-NET-0002","prompt":"Explain DNS TTL values clearly."}\n',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "answers.jsonl"
+
+    class Model:
+        async def a_generate(self, instruction, schema):
+            prompt_id = "SFT-NET-0001" if "0001" in instruction else "SFT-NET-0002"
+            await asyncio.sleep(0 if prompt_id.endswith("2") else 0.01)
+            return {"id": prompt_id, "required_facts": [prompt_id]}, 0
+
+    monkeypatch.setattr(sft_answers, "create_deepseek_model", lambda temperature: Model())
+    specs = sft_answers.generate_answer_specs(count=2, prompts=prompts, output=output, concurrency=2)
+
+    assert [spec.id for spec in specs] == ["SFT-NET-0001", "SFT-NET-0002"]
+    assert [json.loads(line)["id"] for line in output.read_text().splitlines()] == [
+        "SFT-NET-0001",
+        "SFT-NET-0002",
+    ]
