@@ -12,12 +12,20 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-def create_deepseek_model(*, temperature: float = 0.7) -> object:
+def create_deepseek_model(
+    *,
+    temperature: float = 0.7,
+    generation_kwargs: dict[str, object] | None = None,
+) -> object:
     """Construct the configured DeepSeek model lazily."""
 
     from deepeval.models import DeepSeekModel
 
-    return DeepSeekModel(model=TEACHER_MODEL, temperature=temperature)
+    return DeepSeekModel(
+        model=TEACHER_MODEL,
+        temperature=temperature,
+        generation_kwargs=generation_kwargs,
+    )
 
 
 async def run_concurrently(
