@@ -4,7 +4,7 @@ import asyncio
 import pytest
 from pydantic import ValidationError
 
-from simple_llm.sft_dataset import (
+from simple_llm.sft_prompts import (
     AnswerArtifacts,
     PromptRecord,
     SFTExample,
@@ -12,7 +12,7 @@ from simple_llm.sft_dataset import (
     build_strata,
     format_sft_example,
 )
-from simple_llm import sft_dataset
+from simple_llm import sft_prompts
 
 
 def test_strata_are_reproducible_and_match_3000_quotas() -> None:
@@ -44,27 +44,27 @@ def test_strata_are_reproducible_and_match_3000_quotas() -> None:
 
 def test_strata_assign_valid_topics_and_audiences() -> None:
     for item in build_strata(100):
-        assert item.topic in sft_dataset.TOPICS[item.subject]
-        assert item.audience in sft_dataset.AUDIENCE_GUIDANCE
+        assert item.topic in sft_prompts.TOPICS[item.subject]
+        assert item.audience in sft_prompts.AUDIENCE_GUIDANCE
 
 
 def test_subject_mix_is_sixty_percent_technical() -> None:
     specs = build_strata(1_000)
-    technical = sum(item.subject in sft_dataset.TECHNICAL_SUBJECTS for item in specs)
+    technical = sum(item.subject in sft_prompts.TECHNICAL_SUBJECTS for item in specs)
     assert technical == 600
 
 
 def test_prompt_instruction_uses_audience_guidance() -> None:
-    instruction = sft_dataset._prompt_instruction(build_strata(1))
+    instruction = sft_prompts._prompt_instruction(build_strata(1))
     assert "audience_guidance" in instruction
     assert '"audience":' not in instruction
     assert "Prefer stable facts and concepts" in instruction
 
 
 def test_topic_catalog_has_broad_coverage() -> None:
-    assert len(sft_dataset.TOPICS) == 20
-    assert sum(len(topics) for topics in sft_dataset.TOPICS.values()) == 400
-    assert {len(topics) for topics in sft_dataset.TOPICS.values()} == {20}
+    assert len(sft_prompts.TOPICS) == 20
+    assert sum(len(topics) for topics in sft_prompts.TOPICS.values()) == 400
+    assert {len(topics) for topics in sft_prompts.TOPICS.values()} == {20}
 
 
 def test_allocate_counts_preserves_total_for_small_counts() -> None:
@@ -103,15 +103,15 @@ def test_sft_example_rejects_other_roles() -> None:
 
 
 def test_duplicate_detection_catches_eval_reuse() -> None:
-    assert sft_dataset._is_duplicate(" Explain a pump. ", ["Explain a pump."])
-    assert not sft_dataset._is_duplicate("How do I troubleshoot a pump?", ["Explain a pump."])
+    assert sft_prompts._is_duplicate(" Explain a pump. ", ["Explain a pump."])
+    assert not sft_prompts._is_duplicate("How do I troubleshoot a pump?", ["Explain a pump."])
 
 
 def test_prompt_issues_reject_missing_source_material() -> None:
-    assert sft_dataset._prompt_issues(
+    assert sft_prompts._prompt_issues(
         "Explain how DNS resolution works for a junior engineer, including caching and recursion."
     ) == []
-    assert sft_dataset._prompt_issues("Rewrite the attached excerpt in plain language.")
+    assert sft_prompts._prompt_issues("Rewrite the attached excerpt in plain language.")
 
 
 def test_prompt_generation_retries_timeouts(monkeypatch) -> None:
@@ -137,9 +137,9 @@ def test_prompt_generation_retries_timeouts(monkeypatch) -> None:
         pass
 
     model = TimeoutThenSuccessModel()
-    monkeypatch.setattr(sft_dataset.asyncio, "sleep", no_sleep)
+    monkeypatch.setattr(sft_prompts.asyncio, "sleep", no_sleep)
 
-    result = asyncio.run(sft_dataset._generate_prompt_batch(model, [spec], [], 1))
+    result = asyncio.run(sft_prompts._generate_prompt_batch(model, [spec], [], 1))
 
     assert result[0].id == spec.id
     assert model.calls == 2
@@ -153,7 +153,7 @@ def test_legacy_prompt_rows_are_migrated_to_minimal_shape(tmp_path) -> None:
         encoding="utf-8",
     )
 
-    records = sft_dataset._load_prompt_records(path)
+    records = sft_prompts._load_prompt_records(path)
 
     assert records[0].model_dump() == {
         "id": "SFT-NET-0001",
