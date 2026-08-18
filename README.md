@@ -43,6 +43,8 @@ set +a
 
 `.env` is gitignored. Keep the API key there and do not commit it.
 
+## Run LLM judge
+
 Judge a completed run with up to 50 concurrent requests:
 
 ```bash
@@ -81,11 +83,7 @@ Configure the DeepSeek credentials described above before running the generation
    uv run python -m simple_llm.sft_dataset
    ```
 
-   This writes a deterministic, subject-stratified 90/10 split to
-   `data/sft_train.jsonl` and `data/sft_eval.jsonl`. Each JSONL row contains
-   only a `user` message followed by an `assistant` message. Prompts without
-   completed answers are skipped, so both files can be rebuilt while answer
-   generation is still in progress.
+   This writes a deterministic, subject-stratified 90/10 split to `data/sft_train.jsonl` and `data/sft_eval.jsonl`.
 
 ## Fine-tune with Unsloth on Modal
 
@@ -142,6 +140,22 @@ uv run python experiments/04_qwen35_4b_sysprompt.py
 Model weights are cached in the `simple-llm-huggingface-cache` Modal Volume.
 Use `--gpu A10` or `--gpu L40S` to compare throughput and cost with L4.
 
+Run the SFT evaluation with a completed training run's LoRA adapter:
+
+```bash
+uv run python experiments/05_qwen35_4b_sft.py --adapter-run qwen35-4b-sft-YYYYMMDD-HHMMSS
+```
+
+The adapter is loaded from `simple-llm-training`, safely merged into
+Qwen3.5-4B on Modal, then evaluated without a system prompt.
+
+If inference is interrupted, resume the same run without regenerating completed
+predictions:
+
+```bash
+uv run python experiments/05_qwen35_4b_sft.py --resume runs/05_qwen35_4b_sft-YYYYMMDD-HHMMSS-ffffff
+```
+
 ## Backlog
 
 Done:
@@ -158,8 +172,6 @@ Done:
 
 Todo:
 
-- Load the SFT adapter on Modal for inference
-- Evaluate SFT performance (experiment 05)
 - Create DPO dataset
 - Implement DPO
 
