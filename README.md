@@ -81,7 +81,29 @@ Configure the DeepSeek credentials described above before running the generation
    uv run python -m simple_llm.sft_dataset
    ```
 
-   The output is JSONL with one `messages` field per row. Each row contains only a `user` message followed by an `assistant` message. Prompts without completed answers are skipped, so the dataset can be rebuilt while answer generation is still in progress.
+   This writes a deterministic, subject-stratified 90/10 split to
+   `data/sft_train.jsonl` and `data/sft_eval.jsonl`. Each JSONL row contains
+   only a `user` message followed by an `assistant` message. Prompts without
+   completed answers are skipped, so both files can be rebuilt while answer
+   generation is still in progress.
+
+## Fine-tune with Unsloth on Modal
+
+Run a one-step smoke test on an L4 before starting the full job:
+
+```bash
+uv run python simple_llm/sft_training.py --run-name sft-smoke --max-steps 1
+```
+
+Start the two-epoch run in detached mode so it continues after the terminal closes:
+
+```bash
+uv run python simple_llm/sft_training.py --detach
+```
+
+The script trains a bf16 LoRA adapter for Qwen/Qwen3.5-4B. Training artifacts are stored in the simple-llm-training Modal Volume, while model downloads reuse simple-llm-huggingface-cache.
+
+Use `--gpu A10` or `--gpu L40S` to select a GPU, `--run-name` to name runs, and `--detach` to keep TensorBoard available after training. Training uses Qwen3.5's non-thinking chat format, evaluates every 25 steps, and restores the checkpoint with the lowest evaluation loss.
 
 ## Experiments
 
@@ -122,17 +144,20 @@ Done:
 - Run Qwen3.5-4B on Modal L4 GPU
 - Build LLM judge scorer (GEval)
 - Analyse LLM judge scores
+- Create SFT dataset
+- Implement SFT
 
 Todo:
 
-- Create SFT dataset
-- Implement SFT
+- Load the SFT adapter on Modal for inference
+- Evaluate SFT performance (experiment 05)
 - Create DPO dataset
 - Implement DPO
 
 Later:
 
 - Run benchmarks (viol/100w, MMLU-Pro)
+- Disable thinking and rerun base model
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
 - Serve on vLLM

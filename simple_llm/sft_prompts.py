@@ -149,11 +149,18 @@ class PromptBatch(BaseModel):
     prompts: list[GeneratedPrompt] = Field(min_length=1)
 
 
+class SFTTextContent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["text"] = "text"
+    text: str = Field(min_length=1)
+
+
 class SFTMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1)
+    content: list[SFTTextContent] = Field(min_length=1, max_length=1)
 
 
 class SFTExample(BaseModel):
