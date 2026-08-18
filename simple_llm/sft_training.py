@@ -12,10 +12,14 @@ from typing import Any
 
 import modal
 
-REMOTE_DATASET = "/workspace/sft_dataset.jsonl"
+REMOTE_TRAIN_DATASET = "/workspace/sft_train.jsonl"
+REMOTE_EVAL_DATASET = "/workspace/sft_eval.jsonl"
 HF_CACHE_DIR = "/cache/huggingface"
 TRAINING_DIR = "/training"
-DATASET_PATH = Path(__file__).resolve().parents[1] / "data/sft_dataset.jsonl"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+PACKAGE_DIR = Path(__file__).resolve().parent
+TRAIN_DATASET_PATH = DATA_DIR / "sft_train.jsonl"
+EVAL_DATASET_PATH = DATA_DIR / "sft_eval.jsonl"
 MODEL_NAME = "Qwen/Qwen3.5-4B"
 SEED = 42
 MAX_LENGTH = 2048
@@ -55,13 +59,14 @@ def load_dataset_rows(path: Path) -> list[dict[str, Any]]:
 
 def to_prompt_completion_rows(
     rows: list[dict[str, Any]],
-) -> list[dict[str, list[dict[str, Any]]]]:
+) -> list[dict[str, Any]]:
     """Convert two-message conversations to TRL prompt-completion rows."""
 
     return [
         {
             "prompt": [row["messages"][0]],
             "completion": [row["messages"][1]],
+            "chat_template_kwargs": {"enable_thinking": False},
         }
         for row in rows
     ]
@@ -73,7 +78,7 @@ def run_training() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu", default="L4", help="Modal GPU type (default: L4).")
     parser.add_argument("--run-name", default="")
-    parser.add_argument("--epochs", type=float, default=3.0)
+    parser.add_argument("--epochs", type=float, default=2.0)
     parser.add_argument("--max-steps", type=int, default=-1)
     parser.add_argument(
         "--detach", action="store_true", help="Keep the Modal app running on exit."
@@ -83,7 +88,8 @@ def run_training() -> None:
         parser.error("--epochs must be positive")
     if args.max_steps == 0 or args.max_steps < -1:
         parser.error("--max-steps must be -1 or a positive integer")
-    load_dataset_rows(DATASET_PATH)
+    load_dataset_rows(TRAIN_DATASET_PATH)
+    load_dataset_rows(EVAL_DATASET_PATH)
     run_name = args.run_name or datetime.now(timezone.utc).strftime(
         "qwen35-4b-sft-%Y%m%d-%H%M%S"
     )
@@ -106,8 +112,9 @@ def run_training() -> None:
             "datasets==4.3.0",
         )
         .env({"HF_HOME": HF_CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
-        .add_local_file(DATASET_PATH, REMOTE_DATASET, copy=True)
-        .add_local_python_source("simple_llm")
+        .add_local_file(TRAIN_DATASET_PATH, REMOTE_TRAIN_DATASET, copy=True)
+        .add_local_file(EVAL_DATASET_PATH, REMOTE_EVAL_DATASET, copy=True)
+        .add_local_dir(PACKAGE_DIR, "/root/simple_llm", ignore=["**/__pycache__/**"])
     )
     app = modal.App("simple-llm-sft")
 
@@ -131,9 +138,12 @@ def run_training() -> None:
         from transformers.trainer_utils import get_last_checkpoint
         from trl import SFTConfig, SFTTrainer
 
-        remote_dataset_path = Path(REMOTE_DATASET)
-        rows = load_dataset_rows(remote_dataset_path)
-        dataset = Dataset.from_list(to_prompt_completion_rows(rows))
+        remote_train_path = Path(REMOTE_TRAIN_DATASET)
+        remote_eval_path = Path(REMOTE_EVAL_DATASET)
+        train_rows = load_dataset_rows(remote_train_path)
+        eval_rows = load_dataset_rows(remote_eval_path)
+        train_dataset = Dataset.from_list(to_prompt_completion_rows(train_rows))
+        eval_dataset = Dataset.from_list(to_prompt_completion_rows(eval_rows))
         run_dir = Path(TRAINING_DIR) / run_name
         adapter_dir = run_dir / "adapter"
         checkpoint_dir = run_dir / "checkpoints"
@@ -169,6 +179,7 @@ def run_training() -> None:
             max_seq_length=MAX_LENGTH,
         )
 
+        checkpoint_steps = min(25, max_steps) if max_steps > 0 else 25
         training_args = SFTConfig(
             output_dir=str(checkpoint_dir),
             max_length=MAX_LENGTH,
@@ -176,24 +187,35 @@ def run_training() -> None:
             gradient_accumulation_steps=4,
             num_train_epochs=epochs,
             max_steps=max_steps,
-            learning_rate=2e-4,
-            warmup_steps=5,
+            learning_rate=1e-4,
+            warmup_ratio=0.05,
             optim="adamw_8bit",
-            weight_decay=0.001,
+            weight_decay=0.01,
             lr_scheduler_type="linear",
+            completion_only_loss=True,
             logging_steps=1,
-            save_steps=25,
+            eval_strategy="steps",
+            eval_steps=checkpoint_steps,
+            save_steps=checkpoint_steps,
             save_total_limit=2,
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
             bf16=True,
             seed=SEED,
             report_to="none",
         )
         config = {
             "model": MODEL_NAME,
-            "dataset_sha256": hashlib.sha256(
-                remote_dataset_path.read_bytes()
+            "train_dataset_sha256": hashlib.sha256(
+                remote_train_path.read_bytes()
             ).hexdigest(),
-            "example_count": len(rows),
+            "eval_dataset_sha256": hashlib.sha256(
+                remote_eval_path.read_bytes()
+            ).hexdigest(),
+            "train_example_count": len(train_rows),
+            "eval_example_count": len(eval_rows),
+            "thinking": False,
             "lora_rank": 16,
             "lora_alpha": 16,
             "training": training_args.to_dict(),
@@ -213,7 +235,8 @@ def run_training() -> None:
         trainer = SFTTrainer(
             model=model,
             processing_class=tokenizer,
-            train_dataset=dataset,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
             args=training_args,
         )
 
@@ -225,6 +248,7 @@ def run_training() -> None:
         checkpoint = get_last_checkpoint(str(checkpoint_dir))
         result = trainer.train(resume_from_checkpoint=checkpoint)
         trainer.save_metrics("train", result.metrics)
+        trainer.save_metrics("eval", trainer.evaluate())
         trainer.save_state()
         model.save_pretrained(adapter_dir)
         tokenizer.save_pretrained(adapter_dir)
@@ -236,6 +260,7 @@ def run_training() -> None:
         call = train.with_options(gpu=args.gpu).spawn(
             run_name, args.epochs, args.max_steps
         )
+        print(f"Monitor training at {call.get_dashboard_url()}")
         print(f"Saved training artifacts to {call.get()}")
 
 

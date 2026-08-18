@@ -41,5 +41,9 @@ def test_to_prompt_completion_rows_separates_the_training_target():
     }
 
     assert to_prompt_completion_rows([{"messages": [user, assistant]}]) == [
-        {"prompt": [user], "completion": [assistant]}
+        {
+            "prompt": [user],
+            "completion": [assistant],
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
     ]
