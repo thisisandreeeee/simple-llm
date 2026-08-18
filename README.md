@@ -81,7 +81,41 @@ Configure the DeepSeek credentials described above before running the generation
    uv run python -m simple_llm.sft_dataset
    ```
 
-   The output is JSONL with one `messages` field per row. Each row contains only a `user` message followed by an `assistant` message. Prompts without completed answers are skipped, so the dataset can be rebuilt while answer generation is still in progress.
+   This writes a deterministic, subject-stratified 90/10 split to
+   `data/sft_train.jsonl` and `data/sft_eval.jsonl`. Each JSONL row contains
+   only a `user` message followed by an `assistant` message. Prompts without
+   completed answers are skipped, so both files can be rebuilt while answer
+   generation is still in progress.
+
+## Fine-tune with Unsloth on Modal
+
+Run a one-step smoke test on an L4 before starting the full job:
+
+```bash
+uv run python simple_llm/sft_training.py --run-name sft-smoke --max-steps 1
+```
+
+Start the two-epoch run in detached mode so it continues after the terminal closes:
+
+```bash
+uv run python simple_llm/sft_training.py --detach
+```
+
+The script trains a bf16 LoRA adapter for `Qwen/Qwen3.5-4B`. Checkpoints,
+metrics, configuration, and the final adapter are stored in the
+`simple-llm-training` Modal Volume. Model downloads reuse the existing
+`simple-llm-huggingface-cache` Volume. Use `--gpu A10` or `--gpu L40S` to
+select a different GPU, and use a unique `--run-name` for named runs.
+Training uses Qwen3.5's non-thinking chat format and evaluates every 25 steps,
+restoring the checkpoint with the lowest evaluation loss. The command prints a
+Modal dashboard link where Trainer logs show `loss`, `eval_loss`, learning rate,
+and gradient norm. A widening gap between falling training loss and rising
+evaluation loss indicates overfitting. Afterward, inspect the complete metric
+history with:
+
+```bash
+uv run modal volume get simple-llm-training RUN/checkpoints/trainer_state.json -
+```
 
 ## Experiments
 
@@ -122,17 +156,19 @@ Done:
 - Run Qwen3.5-4B on Modal L4 GPU
 - Build LLM judge scorer (GEval)
 - Analyse LLM judge scores
+- Create SFT dataset
 
 Todo:
 
-- Create SFT dataset
-- Implement SFT
+- Load the SFT adapter on Modal for inference
+- Evaluate SFT performance (experiment 05)
 - Create DPO dataset
 - Implement DPO
 
 Later:
 
 - Run benchmarks (viol/100w, MMLU-Pro)
+- Disable thinking and rerun base model
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
 - Serve on vLLM
