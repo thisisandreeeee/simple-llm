@@ -34,7 +34,8 @@ and export its variables into the current shell:
 
 ```bash
 cp .env.example .env
-$EDITOR .env
+
+# add your credentials to .env
 set -a
 source .env
 set +a
@@ -69,10 +70,7 @@ Configure the DeepSeek credentials described above before running the generation
 2. Generate assistant answers:
 
    ```bash
-   uv run python -m simple_llm.sft_answers \
-     --count 3000 \
-     --prompts data/sft_prompts.jsonl \
-     --output data/sft_answers.jsonl
+   uv run python -m simple_llm.sft_answers --count 500
    ```
 
    Answers are generated for the first `--count` prompts and appended by ID. Rerunning the command resumes unfinished answers.
@@ -80,10 +78,7 @@ Configure the DeepSeek credentials described above before running the generation
 3. Build the SFT dataset:
 
    ```bash
-   uv run python -m simple_llm.sft_dataset \
-     --prompts data/sft_prompts.jsonl \
-     --answers data/sft_answers.jsonl \
-     --output data/sft_dataset.jsonl
+   uv run python -m simple_llm.sft_dataset
    ```
 
    The output is JSONL with one `messages` field per row. Each row contains only a `user` message followed by an `assistant` message. Prompts without completed answers are skipped, so the dataset can be rebuilt while answer generation is still in progress.
@@ -130,11 +125,14 @@ Done:
 
 Todo:
 
-- Implement post training with dataset of 1-3k prompts: SFT vs. DPO
+- Create SFT dataset
+- Implement SFT
+- Create DPO dataset
+- Implement DPO
 
 Later:
 
-- Evaluate post trained model vs base model using rule-based scorer, LLM-as-a-judge, and benchmarks (viol/100w, MMLU-Pro)
+- Run benchmarks (viol/100w, MMLU-Pro)
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
 - Serve on vLLM
