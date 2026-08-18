@@ -93,6 +93,3 @@ def summarize_scores(results: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "results": results,
     }
-
-
-__all__ = ["score_predictions", "summarize_scores"]

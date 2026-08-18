@@ -202,22 +202,5 @@ def main(count: int | None = None) -> None:
     print(f"Wrote {len(records)} answers to {output}")
 
 
-__all__ = [
-    "AnswerRecord",
-    "GeneratedAnswer",
-    "DATA_DIR",
-    "DEFAULT_OUTPUT",
-    "DEFAULT_PROMPTS",
-    "CORRECTNESS_PROMPT",
-    "SIMPLE_ENGLISH_PROMPT",
-    "answer_instruction",
-    "generate_answer",
-    "generate_answers",
-    "load_answer_records",
-    "load_prompts",
-    "main",
-]
-
-
 if __name__ == "__main__":
     main()

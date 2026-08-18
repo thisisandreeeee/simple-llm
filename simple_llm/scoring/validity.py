@@ -57,6 +57,3 @@ def validate_answer(
 
     unique_reasons = tuple(dict.fromkeys(reasons))
     return AnswerValidity(valid=not unique_reasons, reasons=unique_reasons)
-
-
-__all__ = ["AnswerValidity", "validate_answer"]

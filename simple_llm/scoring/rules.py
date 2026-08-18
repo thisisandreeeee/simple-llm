@@ -241,17 +241,3 @@ RULE_SCORERS: dict[str, Scorer] = {
     "terminology_consistency": terminology_consistency,
     "document_limits": document_limits,
 }
-
-
-__all__ = [
-    "RULE_SCORERS",
-    "controlled_vocabulary_scorer",
-    "controlled_vocabulary_scorer_from_file",
-    "document_limits",
-    "average_sentence_length",
-    "long_sentence_fraction",
-    "procedure_syntax",
-    "sentence_mechanics",
-    "terminology_consistency",
-    "verb_forms_and_modals",
-]

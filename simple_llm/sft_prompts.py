@@ -14,13 +14,12 @@ from difflib import SequenceMatcher
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .llm_runtime import TEACHER_MODEL, create_deepseek_model, run_concurrently
+from .llm_runtime import create_deepseek_model, run_concurrently
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DEFAULT_COUNT = 3_000
 DEFAULT_SEED = 42
-TEACHER_MODEL = "deepseek-v4-pro"
 
 SUBJECTS = (
     "networking and internet",
@@ -150,23 +149,6 @@ class PromptBatch(BaseModel):
     prompts: list[GeneratedPrompt] = Field(min_length=1)
 
 
-class AnswerArtifacts(BaseModel):
-    """Ordered teacher artifacts; only ``final_response`` is training data."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    id: str = Field(pattern=r"^SFT-[A-Z]+-\d{4}$")
-    facts: list[str] = Field(min_length=1)
-    required_sections: list[str] = Field(default_factory=list)
-    caveats_and_safety: list[str] = Field(default_factory=list)
-    valid_commands_or_code: list[str] = Field(default_factory=list)
-    prohibited_claims: list[str] = Field(default_factory=list)
-    answer_type: str = Field(min_length=1)
-    approximate_length: str = Field(min_length=1)
-    prose: str = Field(min_length=1)
-    final_response: str = Field(min_length=1)
-
-
 class SFTMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -256,19 +238,6 @@ def build_strata(count: int = DEFAULT_COUNT, seed: int = DEFAULT_SEED) -> list[P
             )
         )
     return specs
-
-
-def format_sft_example(prompt: PromptRecord, answer: AnswerArtifacts) -> SFTExample:
-    """Convert validated prompt and answer artifacts to the two-role SFT format."""
-
-    if prompt.id != answer.id:
-        raise ValueError(f"prompt and answer IDs differ: {prompt.id!r}, {answer.id!r}")
-    return SFTExample(
-        messages=[
-            SFTMessage(role="user", content=prompt.prompt),
-            SFTMessage(role="assistant", content=answer.final_response),
-        ]
-    )
 
 
 def _normalise_prompt(prompt: str) -> str:
@@ -393,11 +362,13 @@ async def _generate_prompt_batch(
                 raise ValueError("teacher returned the wrong prompt IDs")
             if len(batch.prompts) != len(specs):
                 raise ValueError("teacher returned the wrong prompt count")
-            prompts = [item.prompt for item in batch.prompts]
+            prompts_by_id = {item.id: item.prompt for item in batch.prompts}
+            prompts = list(prompts_by_id.values())
             if len({_normalise_prompt(prompt) for prompt in prompts}) != len(prompts):
                 raise ValueError("teacher returned duplicate prompts")
             issues: dict[str, list[str]] = {}
-            for spec, prompt in zip(specs, prompts):
+            for spec in specs:
+                prompt = prompts_by_id[spec.id]
                 prompt_issues = _prompt_issues(prompt)
                 if prompt_issues:
                     issues[spec.id] = prompt_issues
@@ -523,27 +494,6 @@ def main() -> None:
         resume=not args.no_resume,
     )
     print(f"Wrote {len(records)} prompts to {args.output}")
-
-
-__all__ = [
-    "AnswerArtifacts",
-    "DATA_DIR",
-    "DEFAULT_COUNT",
-    "DEFAULT_SEED",
-    "PromptRecord",
-    "PromptSpec",
-    "TOPICS",
-    "GeneratedPrompt",
-    "PromptBatch",
-    "SFTExample",
-    "SFTMessage",
-    "TEACHER_MODEL",
-    "allocate_counts",
-    "build_strata",
-    "format_sft_example",
-    "generate_prompts",
-    "main",
-]
 
 
 if __name__ == "__main__":
