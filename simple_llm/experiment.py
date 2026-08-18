@@ -145,6 +145,3 @@ def run_experiment(
             run_dir / "predictions.jsonl", run_dir / "rule_scores.json"
         )
         print(f"Wrote {run_dir}")
-
-
-__all__ = ["load_evals", "run_experiment", "summarize_inference"]

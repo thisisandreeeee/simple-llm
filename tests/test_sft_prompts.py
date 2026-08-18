@@ -5,12 +5,10 @@ import pytest
 from pydantic import ValidationError
 
 from simple_llm.sft_prompts import (
-    AnswerArtifacts,
     PromptRecord,
     SFTExample,
     allocate_counts,
     build_strata,
-    format_sft_example,
 )
 from simple_llm import sft_prompts
 
@@ -73,25 +71,6 @@ def test_allocate_counts_preserves_total_for_small_counts() -> None:
     assert result == {"a": 2, "b": 5}
 
 
-def test_sft_format_keeps_only_user_and_assistant() -> None:
-    prompt = PromptRecord(
-        id=build_strata(1)[0].id,
-        prompt="Explain a pump.",
-    )
-    answer = AnswerArtifacts(
-        id=prompt.id,
-        facts=["A pump moves liquid."],
-        answer_type="definition",
-        approximate_length="short",
-        prose="A pump moves liquid.",
-        final_response="A pump moves liquid.",
-    )
-
-    result = format_sft_example(prompt, answer)
-    assert [message.role for message in result.messages] == ["user", "assistant"]
-    assert set(prompt.model_dump()) == {"id", "prompt"}
-
-
 def test_sft_example_rejects_other_roles() -> None:
     with pytest.raises(ValidationError):
         SFTExample(
@@ -143,6 +122,53 @@ def test_prompt_generation_retries_timeouts(monkeypatch) -> None:
 
     assert result[0].id == spec.id
     assert model.calls == 2
+
+
+def test_prompt_validation_attributes_issues_by_id(monkeypatch) -> None:
+    specs = build_strata(2)
+
+    class Model:
+        calls = 0
+
+        async def a_generate(self, instruction, schema):
+            self.calls += 1
+            if self.calls == 1:
+                return {
+                    "prompts": [
+                        {"id": specs[1].id, "prompt": "Too short."},
+                        {
+                            "id": specs[0].id,
+                            "prompt": (
+                                "Explain this topic clearly with practical details "
+                                "and relevant trade-offs."
+                            ),
+                        },
+                    ]
+                }, 0
+            return {
+                "prompts": [
+                    {
+                        "id": specs[1].id,
+                        "prompt": (
+                            "Explain this topic clearly with practical details "
+                            "and relevant trade-offs."
+                        ),
+                    },
+                    {
+                        "id": specs[0].id,
+                        "prompt": (
+                            "Describe this topic clearly with practical details "
+                            "and relevant trade-offs."
+                        ),
+                    },
+                ]
+            }, 0
+
+    model = Model()
+    result = asyncio.run(sft_prompts._generate_prompt_batch(model, specs, [], 1))
+
+    assert model.calls == 2
+    assert {item.id for item in result} == {spec.id for spec in specs}
 
 
 def test_legacy_prompt_rows_are_migrated_to_minimal_shape(tmp_path) -> None:
