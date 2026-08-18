@@ -11,6 +11,7 @@ from .sft_prompts import (
     PromptRecord,
     SFTExample,
     SFTMessage,
+    SFTTextContent,
 )
 
 DEFAULT_PROMPTS = DATA_DIR / "sft_prompts.jsonl"
@@ -32,8 +33,15 @@ def build_dataset(
     return [
         SFTExample(
             messages=[
-                SFTMessage(role="user", content=prompt.prompt),
-                SFTMessage(role="assistant", content=answer_by_id[prompt.id].final_response),
+                SFTMessage(
+                    role="user", content=[SFTTextContent(text=prompt.prompt)]
+                ),
+                SFTMessage(
+                    role="assistant",
+                    content=[
+                        SFTTextContent(text=answer_by_id[prompt.id].final_response)
+                    ],
+                ),
             ]
         )
         for prompt in prompts
