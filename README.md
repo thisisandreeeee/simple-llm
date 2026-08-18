@@ -101,9 +101,18 @@ Start the two-epoch run in detached mode so it continues after the terminal clos
 uv run python simple_llm/sft_training.py --detach
 ```
 
-The script trains a bf16 LoRA adapter for Qwen/Qwen3.5-4B. Training artifacts are stored in the simple-llm-training Modal Volume, while model downloads reuse simple-llm-huggingface-cache.
+The script trains a bf16 LoRA adapter for Qwen/Qwen3.5-4B. Use `--gpu A10` or `--gpu L40S` to select a GPU and `--run-name` to name runs. Training uses Qwen3.5's non-thinking chat format, evaluates every 25 steps, and restores the checkpoint with the lowest evaluation loss.
 
-Use `--gpu A10` or `--gpu L40S` to select a GPU, `--run-name` to name runs, and `--detach` to keep TensorBoard available after training. Training uses Qwen3.5's non-thinking chat format, evaluates every 25 steps, and restores the checkpoint with the lowest evaluation loss.
+Training artifacts are stored in the simple-llm-training Modal Volume, while model downloads reuse simple-llm-huggingface-cache. Modal prints a TensorBoard URL for monitoring the active run; the URL stops when the run ends.
+
+To inspect TensorBoard afterward, replace `RUN` with the run name and download its persisted event files:
+
+```bash
+uv run modal volume get simple-llm-training RUN/checkpoints/runs ./tensorboard-logs
+uvx --from tensorboard tensorboard --logdir ./tensorboard-logs
+```
+
+Open http://localhost:6006.
 
 ## Experiments
 
