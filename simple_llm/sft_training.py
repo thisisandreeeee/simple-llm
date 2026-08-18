@@ -110,6 +110,7 @@ def run_training() -> None:
             "transformers==5.5.0",
             "trl==0.24.0",
             "datasets==4.3.0",
+            "tensorboard",
         )
         .env({"HF_HOME": HF_CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
         .add_local_file(TRAIN_DATASET_PATH, REMOTE_TRAIN_DATASET, copy=True)
@@ -117,6 +118,40 @@ def run_training() -> None:
         .add_local_dir(PACKAGE_DIR, "/root/simple_llm", ignore=["**/__pycache__/**"])
     )
     app = modal.App("simple-llm-sft")
+
+    class VolumeMiddleware:
+        def __init__(self, wsgi_app):
+            self.wsgi_app = wsgi_app
+
+        def __call__(self, environ, start_response):
+            if environ.get("PATH_INFO") == "/":
+                try:
+                    training_volume.reload()
+                except Exception as error:
+                    print(f"Could not reload TensorBoard logs: {error}")
+            return self.wsgi_app(environ, start_response)
+
+    @app.function(
+        serialized=True,
+        image=image,
+        volumes={TRAINING_DIR: training_volume},
+        max_containers=1,
+    )
+    @modal.wsgi_app()
+    def tensorboard_app():
+        import tensorboard
+
+        board = tensorboard.program.TensorBoard()
+        board.configure(logdir=TRAINING_DIR, load_fast="false")
+        data_provider, deprecated_multiplexer = board._make_data_provider()
+        return tensorboard.backend.application.TensorBoardWSGIApp(
+            board.flags,
+            board.plugin_loaders,
+            data_provider,
+            board.assets_zip_provider,
+            deprecated_multiplexer,
+            experimental_middlewares=[VolumeMiddleware],
+        )
 
     @app.function(
         serialized=True,
@@ -193,6 +228,7 @@ def run_training() -> None:
             weight_decay=0.01,
             lr_scheduler_type="linear",
             completion_only_loss=True,
+            logging_dir=str(run_dir / "tensorboard"),
             logging_steps=1,
             eval_strategy="steps",
             eval_steps=checkpoint_steps,
@@ -203,7 +239,7 @@ def run_training() -> None:
             greater_is_better=False,
             bf16=True,
             seed=SEED,
-            report_to="none",
+            report_to="tensorboard",
         )
         config = {
             "model": MODEL_NAME,

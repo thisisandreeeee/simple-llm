@@ -101,21 +101,9 @@ Start the two-epoch run in detached mode so it continues after the terminal clos
 uv run python simple_llm/sft_training.py --detach
 ```
 
-The script trains a bf16 LoRA adapter for `Qwen/Qwen3.5-4B`. Checkpoints,
-metrics, configuration, and the final adapter are stored in the
-`simple-llm-training` Modal Volume. Model downloads reuse the existing
-`simple-llm-huggingface-cache` Volume. Use `--gpu A10` or `--gpu L40S` to
-select a different GPU, and use a unique `--run-name` for named runs.
-Training uses Qwen3.5's non-thinking chat format and evaluates every 25 steps,
-restoring the checkpoint with the lowest evaluation loss. The command prints a
-Modal dashboard link where Trainer logs show `loss`, `eval_loss`, learning rate,
-and gradient norm. A widening gap between falling training loss and rising
-evaluation loss indicates overfitting. Afterward, inspect the complete metric
-history with:
+The script trains a bf16 LoRA adapter for Qwen/Qwen3.5-4B. Training artifacts are stored in the simple-llm-training Modal Volume, while model downloads reuse simple-llm-huggingface-cache.
 
-```bash
-uv run modal volume get simple-llm-training RUN/checkpoints/trainer_state.json -
-```
+Use `--gpu A10` or `--gpu L40S` to select a GPU, `--run-name` to name runs, and `--detach` to keep TensorBoard available after training. Training uses Qwen3.5's non-thinking chat format, evaluates every 25 steps, and restores the checkpoint with the lowest evaluation loss.
 
 ## Experiments
 
@@ -157,6 +145,7 @@ Done:
 - Build LLM judge scorer (GEval)
 - Analyse LLM judge scores
 - Create SFT dataset
+- Implement SFT
 
 Todo:
 
