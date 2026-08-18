@@ -1,8 +1,41 @@
 import json
+from types import SimpleNamespace
+
+import pytest
+import torch
 
 from simple_llm.experiment import summarize_inference
-from simple_llm.inference import generate_predictions
+from simple_llm.inference import generate, generate_predictions
 from simple_llm.rule_scoring import score_predictions
+
+
+def test_generate_stops_on_model_and_chat_eos_tokens() -> None:
+    class Tokenizer:
+        eos_token_id = 248046
+        pad_token_id = 248044
+
+        def apply_chat_template(self, *args, **kwargs):
+            return "formatted prompt"
+
+        def __call__(self, *args, **kwargs):
+            return {"input_ids": torch.tensor([[10, 11]])}
+
+        def decode(self, *args, **kwargs):
+            return "answer"
+
+    class Model:
+        generation_config = SimpleNamespace(eos_token_id=248044)
+
+        def generate(self, **kwargs):
+            self.kwargs = kwargs
+            return torch.tensor([[10, 11, 20, 248046]])
+
+    model = Model()
+    result = generate(model, Tokenizer(), torch.device("cpu"), "prompt")
+
+    assert model.kwargs["eos_token_id"] == [248044, 248046]
+    assert model.kwargs["pad_token_id"] == 248044
+    assert result["response"] == "answer"
 
 
 def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
@@ -42,3 +75,37 @@ def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
     assert scores["domain_score_means"]["ONE"]["average_sentence_length"] == 4
     assert scores["results"][0]["scores"]["average_sentence_length"] == 4
     assert scores["results"][1]["error"] == "RuntimeError: expected"
+
+
+def test_generate_predictions_resumes_existing_prefix(tmp_path) -> None:
+    evals = [
+        {"id": "ONE-01", "prompt": "first"},
+        {"id": "ONE-02", "prompt": "second"},
+    ]
+    predictions_path = tmp_path / "predictions.jsonl"
+    predictions_path.write_text(
+        json.dumps({"id": "ONE-01", "prompt": "first", "response": "done"}) + "\n"
+    )
+    calls = []
+
+    def generator(prompt: str, system_prompt: str | None):
+        calls.append(prompt)
+        return {"response": "new"}
+
+    results = generate_predictions(evals, generator, predictions_path)
+
+    assert calls == ["second"]
+    assert [result["response"] for result in results] == ["done", "new"]
+    assert len(predictions_path.read_text().splitlines()) == 2
+
+
+def test_generate_predictions_rejects_mismatched_prefix(tmp_path) -> None:
+    predictions_path = tmp_path / "predictions.jsonl"
+    predictions_path.write_text(json.dumps({"id": "OTHER", "prompt": "first"}) + "\n")
+
+    with pytest.raises(ValueError, match="do not match"):
+        generate_predictions(
+            [{"id": "ONE-01", "prompt": "first"}],
+            lambda *_: {},
+            predictions_path,
+        )

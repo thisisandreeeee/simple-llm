@@ -15,6 +15,15 @@ GENERATION = {"do_sample": False, "max_new_tokens": MAX_NEW_TOKENS}
 Generator = Callable[[str, str | None], dict[str, Any]]
 
 
+def generation_eos_token_ids(model: Any, tokenizer: Any) -> list[int]:
+    """Stop on both the model EOS and the chat template's end-of-turn token."""
+    configured = model.generation_config.eos_token_id
+    token_ids = [configured] if isinstance(configured, int) else list(configured or [])
+    if tokenizer.eos_token_id is not None and tokenizer.eos_token_id not in token_ids:
+        token_ids.append(tokenizer.eos_token_id)
+    return token_ids
+
+
 def device() -> Any:
     import torch
 
@@ -49,11 +58,17 @@ def generate(
     input_tokens = inputs["input_ids"].shape[-1]
 
     started = time.perf_counter()
+    pad_token_id = (
+        tokenizer.pad_token_id
+        if tokenizer.pad_token_id is not None
+        else tokenizer.eos_token_id
+    )
     with torch.inference_mode():
         output = model.generate(
             **inputs,
             **GENERATION,
-            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=generation_eos_token_ids(model, tokenizer),
+            pad_token_id=pad_token_id,
         )
     generated = output[0, input_tokens:]
     output_tokens = len(generated)
@@ -102,9 +117,28 @@ def generate_predictions(
 ) -> list[dict[str, Any]]:
     """Generate and incrementally persist each evaluation response."""
 
-    results = []
-    with predictions_path.open("w", encoding="utf-8") as output:
-        for index, item in enumerate(evals, 1):
+    results: list[dict[str, Any]] = []
+    if predictions_path.exists():
+        try:
+            results = [
+                json.loads(line)
+                for line in predictions_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        except (json.JSONDecodeError, OSError) as exc:
+            raise ValueError(f"Invalid predictions file: {predictions_path}") from exc
+        if len(results) > len(evals) or any(
+            result.get("id") != item["id"]
+            or result.get("prompt") != item["prompt"]
+            for result, item in zip(results, evals)
+        ):
+            raise ValueError(
+                f"Existing predictions do not match the evaluation set: {predictions_path}"
+            )
+        print(f"Resuming after {len(results)}/{len(evals)} prompt(s)")
+
+    with predictions_path.open("a" if results else "w", encoding="utf-8") as output:
+        for index, item in enumerate(evals[len(results) :], len(results) + 1):
             result: dict[str, Any] = {
                 "id": item["id"],
                 "domain": item["id"].split("-", 1)[0],
