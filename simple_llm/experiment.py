@@ -87,6 +87,7 @@ def run_experiment(
     system_prompt_source: str | None = None,
     default_backend: str = "local",
     description: str | None = None,
+    require_adapter_run: bool = False,
 ) -> None:
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--limit", type=int, help="Run only the first N prompts.")
@@ -94,37 +95,92 @@ def run_experiment(
         "--backend", choices=("local", "modal"), default=default_backend
     )
     parser.add_argument("--gpu", default="L4", help="Modal GPU type (default: L4).")
+    parser.add_argument(
+        "--resume",
+        type=Path,
+        metavar="RUN_DIR",
+        help="Resume a run by appending its remaining predictions.",
+    )
+    if require_adapter_run:
+        parser.add_argument(
+            "--adapter-run",
+            help="Completed SFT training run whose LoRA adapter to merge.",
+        )
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be a positive integer")
+    if require_adapter_run and args.backend != "modal":
+        parser.error("--adapter-run is available only with --backend modal")
+
+    run_dir = args.resume.resolve() if args.resume else None
+    previous_config: dict[str, Any] | None = None
+    if run_dir:
+        try:
+            previous_config = json.loads((run_dir / "config.json").read_text())
+        except (json.JSONDecodeError, OSError) as exc:
+            parser.error(f"invalid resume directory: {exc}")
+        if args.limit is None:
+            args.limit = previous_config.get("prompt_count")
+        adapter = previous_config.get("adapter")
+        if (
+            require_adapter_run
+            and args.adapter_run is None
+            and isinstance(adapter, dict)
+        ):
+            args.adapter_run = adapter.get("run")
+    if require_adapter_run and not args.adapter_run:
+        parser.error("--adapter-run is required for a new run")
 
     evals = load_evals()
     if args.limit:
         evals = evals[: args.limit]
     print(f"Validated {len(evals)} prompt(s)")
 
+    expected_config = {
+        "model": model,
+        "condition": condition,
+        "system_prompt": system_prompt,
+        "system_prompt_source": system_prompt_source,
+        "eval_sha256": hashlib.sha256(EVALS.read_bytes()).hexdigest(),
+        "prompt_count": len(evals),
+        "seed": SEED,
+        "enable_thinking": False,
+        "generation": GENERATION,
+        "backend": args.backend,
+    }
+    if previous_config:
+        mismatches = [
+            key
+            for key, value in expected_config.items()
+            if previous_config.get(key) != value
+        ]
+        if require_adapter_run:
+            adapter = previous_config.get("adapter")
+            if not isinstance(adapter, dict) or adapter.get("run") != args.adapter_run:
+                mismatches.append("adapter.run")
+        if mismatches:
+            parser.error("resume configuration mismatch: " + ", ".join(mismatches))
+
     random.seed(SEED)
     if args.backend == "modal":
         from simple_llm.modal_inference import modal_generator
 
-        generator_context = modal_generator(model, args.gpu, SEED)
+        generator_context = modal_generator(
+            model,
+            args.gpu,
+            SEED,
+            adapter_run=args.adapter_run if require_adapter_run else None,
+        )
     else:
         generator_context = local_generator(model, SEED)
 
     with generator_context as (generator, runtime):
-        timestamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S-%f")
-        run_dir = ROOT / "runs" / f"{experiment}-{timestamp}"
-        run_dir.mkdir(parents=True)
-        config = {
-            "model": model,
-            "condition": condition,
-            "system_prompt": system_prompt,
-            "system_prompt_source": system_prompt_source,
-            "eval_sha256": hashlib.sha256(EVALS.read_bytes()).hexdigest(),
-            "prompt_count": len(evals),
-            "seed": SEED,
-            "enable_thinking": False,
-            "generation": GENERATION,
+        if run_dir is None:
+            timestamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S-%f")
+            run_dir = ROOT / "runs" / f"{experiment}-{timestamp}"
+            run_dir.mkdir(parents=True)
+        config = previous_config or {
+            **expected_config,
             "git": git_info(),
             **runtime,
         }
