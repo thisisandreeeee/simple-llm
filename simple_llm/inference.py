@@ -10,7 +10,13 @@ from pathlib import Path
 from typing import Any
 
 MAX_NEW_TOKENS = 2048
-GENERATION = {"do_sample": False, "max_new_tokens": MAX_NEW_TOKENS}
+GENERATION = {
+    "do_sample": True,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_new_tokens": MAX_NEW_TOKENS,
+}
 
 Generator = Callable[[str, str | None], dict[str, Any]]
 
@@ -128,8 +134,7 @@ def generate_predictions(
         except (json.JSONDecodeError, OSError) as exc:
             raise ValueError(f"Invalid predictions file: {predictions_path}") from exc
         if len(results) > len(evals) or any(
-            result.get("id") != item["id"]
-            or result.get("prompt") != item["prompt"]
+            result.get("id") != item["id"] or result.get("prompt") != item["prompt"]
             for result, item in zip(results, evals)
         ):
             raise ValueError(

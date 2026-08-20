@@ -17,7 +17,7 @@ CACHE_DIR = "/cache/huggingface"
 TRAINING_DIR = "/training"
 RUN_NAME_PATTERN = r"[A-Za-z0-9][A-Za-z0-9._-]*"
 ADAPTER_MODEL_CLASS = "Qwen3_5ForConditionalGeneration"
-ADAPTER_SCALE = 0.5
+ADAPTER_SCALE = 0.25
 
 app = modal.App("simple-llm-inference")
 cache = modal.Volume.from_name("simple-llm-huggingface-cache", create_if_missing=True)
@@ -117,7 +117,9 @@ class ModalModel:
         adapter: dict[str, Any] | None = None
         if adapter_path and adapter_config:
             if loaded_model_class != ADAPTER_MODEL_CLASS:
-                raise RuntimeError(f"Loaded unexpected model class: {loaded_model_class}")
+                raise RuntimeError(
+                    f"Loaded unexpected model class: {loaded_model_class}"
+                )
             self.model = load_peft_adapter(self.model, adapter_path)
             scaled_layers = scale_peft_adapter(self.model, ADAPTER_SCALE)
             self.model = self.model.merge_and_unload(safe_merge=True)
