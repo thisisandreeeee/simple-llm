@@ -172,6 +172,7 @@ Done:
 
 Todo:
 
+- Analyse base model vs SFT performance
 - Create DPO dataset
 - Implement DPO
 
@@ -181,4 +182,4 @@ Later:
 - Disable thinking and rerun base model
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
-- Serve on vLLM
+- Serve on vLLM to speed up inference
