@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 import torch
+from transformers import RepetitionPenaltyLogitsProcessor
 
 from simple_llm.experiment import summarize_inference
 from simple_llm.inference import (
@@ -92,6 +93,45 @@ def test_generate_passes_configured_logits_processor() -> None:
     )
     assert model.kwargs["logits_processor"][0].penalty == 1.5
     assert result["response"] == "answer"
+
+
+def test_generate_combines_repetition_and_presence_penalties() -> None:
+    class Tokenizer:
+        eos_token_id = 248046
+        pad_token_id = 248044
+
+        def apply_chat_template(self, *args, **kwargs):
+            return "formatted prompt"
+
+        def __call__(self, *args, **kwargs):
+            return {"input_ids": torch.tensor([[10, 11]])}
+
+        def decode(self, *args, **kwargs):
+            return "answer"
+
+    class Model:
+        generation_config = SimpleNamespace(eos_token_id=248044)
+
+        def generate(self, **kwargs):
+            self.kwargs = kwargs
+            return torch.tensor([[10, 11, 20, 248046]])
+
+    model = Model()
+    generate(
+        model,
+        Tokenizer(),
+        torch.device("cpu"),
+        "prompt",
+        presence_penalty=0.5,
+        repetition_penalty=1.05,
+    )
+
+    repetition, presence = model.kwargs["logits_processor"]
+    assert isinstance(repetition, RepetitionPenaltyLogitsProcessor)
+    assert repetition.penalty == 1.05
+    assert repetition.prompt_ignore_length == 2
+    assert isinstance(presence, PresencePenaltyLogitsProcessor)
+    assert presence.penalty == 0.5
 
 
 def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
