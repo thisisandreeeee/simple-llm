@@ -88,6 +88,7 @@ def run_experiment(
     default_backend: str = "local",
     description: str | None = None,
     require_adapter_run: bool = False,
+    presence_penalty: float | None = None,
 ) -> None:
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--limit", type=int, help="Run only the first N prompts.")
@@ -136,6 +137,12 @@ def run_experiment(
         evals = evals[: args.limit]
     print(f"Validated {len(evals)} prompt(s)")
 
+    generation = dict(GENERATION)
+    if presence_penalty is not None:
+        generation["logits_processor"] = {
+            "type": "presence_penalty",
+            "penalty": presence_penalty,
+        }
     expected_config = {
         "model": model,
         "condition": condition,
@@ -145,7 +152,7 @@ def run_experiment(
         "prompt_count": len(evals),
         "seed": SEED,
         "enable_thinking": False,
-        "generation": GENERATION,
+        "generation": generation,
         "backend": args.backend,
     }
     if previous_config:
@@ -170,9 +177,10 @@ def run_experiment(
             args.gpu,
             SEED,
             adapter_run=args.adapter_run if require_adapter_run else None,
+            presence_penalty=presence_penalty,
         )
     else:
-        generator_context = local_generator(model, SEED)
+        generator_context = local_generator(model, SEED, presence_penalty)
 
     with generator_context as (generator, runtime):
         if run_dir is None:
