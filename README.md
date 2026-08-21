@@ -169,17 +169,16 @@ Done:
 - Analyse LLM judge scores
 - Create SFT dataset
 - Implement SFT
+- Analyse base model vs SFT performance
 
 Todo:
 
-- Analyse base model vs SFT performance
+- Serve on vLLM to speed up inference
 - Create DPO dataset
 - Implement DPO
 
 Later:
 
 - Run benchmarks (viol/100w, MMLU-Pro)
-- Disable thinking and rerun base model
 - Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
-- Serve on vLLM to speed up inference
