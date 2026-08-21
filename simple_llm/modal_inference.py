@@ -88,6 +88,7 @@ class ModalModel:
     seed: int = modal.parameter()
     adapter_run: str = modal.parameter(default="")
     presence_penalty: str = modal.parameter(default="0")
+    repetition_penalty: str = modal.parameter(default="0")
 
     @modal.enter()
     def load(self) -> None:
@@ -155,6 +156,7 @@ class ModalModel:
     @modal.method()
     def generate(self, prompt: str, system_prompt: str | None = None) -> dict[str, Any]:
         presence_penalty = float(self.presence_penalty)
+        repetition_penalty = float(self.repetition_penalty)
         return generate(
             self.model,
             self.tokenizer,
@@ -162,6 +164,7 @@ class ModalModel:
             prompt,
             system_prompt,
             presence_penalty or None,
+            repetition_penalty or None,
         )
 
 
@@ -172,6 +175,7 @@ def modal_generator(
     seed: int,
     adapter_run: str | None = None,
     presence_penalty: float | None = None,
+    repetition_penalty: float | None = None,
 ) -> Iterator[tuple[Generator, dict[str, Any]]]:
     """Run an ephemeral Modal app and expose its remote model as a generator."""
     if adapter_run:
@@ -182,6 +186,7 @@ def modal_generator(
             seed=seed,
             adapter_run=adapter_run or "",
             presence_penalty=str(presence_penalty or 0.0),
+            repetition_penalty=str(repetition_penalty or 0.0),
         )
         metadata = {"gpu_requested": gpu, **remote.info.remote()}
         yield remote.generate.remote, metadata

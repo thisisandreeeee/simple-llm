@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from transformers import LogitsProcessor
+from transformers import LogitsProcessor, RepetitionPenaltyLogitsProcessor
 
 MAX_NEW_TOKENS = 2048
 GENERATION = {
@@ -66,6 +66,7 @@ def generate(
     prompt: str,
     system_prompt: str | None = None,
     presence_penalty: float | None = None,
+    repetition_penalty: float | None = None,
 ) -> dict[str, Any]:
     """Generate one response using an already-loaded Transformers model."""
     import torch
@@ -94,10 +95,17 @@ def generate(
         "eos_token_id": generation_eos_token_ids(model, tokenizer),
         "pad_token_id": pad_token_id,
     }
+    logits_processors = []
+    if repetition_penalty is not None:
+        logits_processors.append(
+            RepetitionPenaltyLogitsProcessor(repetition_penalty, input_tokens)
+        )
     if presence_penalty is not None:
-        generation_kwargs["logits_processor"] = [
+        logits_processors.append(
             PresencePenaltyLogitsProcessor(input_tokens, presence_penalty)
-        ]
+        )
+    if logits_processors:
+        generation_kwargs["logits_processor"] = logits_processors
     with torch.inference_mode():
         output = model.generate(**inputs, **generation_kwargs)
     generated = output[0, input_tokens:]
@@ -113,7 +121,10 @@ def generate(
 
 @contextmanager
 def local_generator(
-    model_name: str, seed: int, presence_penalty: float | None = None
+    model_name: str,
+    seed: int,
+    presence_penalty: float | None = None,
+    repetition_penalty: float | None = None,
 ) -> Iterator[tuple[Generator, dict[str, Any]]]:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -135,7 +146,13 @@ def local_generator(
         "model_load_seconds": time.perf_counter() - started,
     }
     yield lambda prompt, system_prompt: generate(
-        model, tokenizer, target, prompt, system_prompt, presence_penalty
+        model,
+        tokenizer,
+        target,
+        prompt,
+        system_prompt,
+        presence_penalty,
+        repetition_penalty,
     ), metadata
 
 
