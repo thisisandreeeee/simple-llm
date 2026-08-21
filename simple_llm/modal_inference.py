@@ -87,6 +87,7 @@ class ModalModel:
     model_name: str = modal.parameter()
     seed: int = modal.parameter()
     adapter_run: str = modal.parameter(default="")
+    presence_penalty: str = modal.parameter(default="0")
 
     @modal.enter()
     def load(self) -> None:
@@ -153,19 +154,34 @@ class ModalModel:
 
     @modal.method()
     def generate(self, prompt: str, system_prompt: str | None = None) -> dict[str, Any]:
-        return generate(self.model, self.tokenizer, self.target, prompt, system_prompt)
+        presence_penalty = float(self.presence_penalty)
+        return generate(
+            self.model,
+            self.tokenizer,
+            self.target,
+            prompt,
+            system_prompt,
+            presence_penalty or None,
+        )
 
 
 @contextmanager
 def modal_generator(
-    model_name: str, gpu: str, seed: int, adapter_run: str | None = None
+    model_name: str,
+    gpu: str,
+    seed: int,
+    adapter_run: str | None = None,
+    presence_penalty: float | None = None,
 ) -> Iterator[tuple[Generator, dict[str, Any]]]:
     """Run an ephemeral Modal app and expose its remote model as a generator."""
     if adapter_run:
         training_adapter_path(adapter_run)
     with modal.enable_output(), app.run():
         remote = ModalModel.with_options(gpu=gpu)(
-            model_name=model_name, seed=seed, adapter_run=adapter_run or ""
+            model_name=model_name,
+            seed=seed,
+            adapter_run=adapter_run or "",
+            presence_penalty=str(presence_penalty or 0.0),
         )
         metadata = {"gpu_requested": gpu, **remote.info.remote()}
         yield remote.generate.remote, metadata

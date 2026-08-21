@@ -9,6 +9,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from transformers import LogitsProcessor
+
 MAX_NEW_TOKENS = 2048
 GENERATION = {
     "do_sample": True,
@@ -19,6 +21,23 @@ GENERATION = {
 }
 
 Generator = Callable[[str, str | None], dict[str, Any]]
+
+
+class PresencePenaltyLogitsProcessor(LogitsProcessor):
+    """Penalize each token already generated once, without penalizing the prompt."""
+
+    def __init__(self, prompt_length: int, penalty: float) -> None:
+        if penalty < 0:
+            raise ValueError("presence penalty must be non-negative")
+        self.prompt_length = prompt_length
+        self.penalty = penalty
+
+    def __call__(self, input_ids: Any, scores: Any) -> Any:
+        adjusted = scores.clone()
+        for row, row_ids in enumerate(input_ids[:, self.prompt_length :]):
+            seen = row_ids.unique()
+            adjusted[row, seen] -= self.penalty
+        return adjusted
 
 
 def generation_eos_token_ids(model: Any, tokenizer: Any) -> list[int]:
@@ -46,6 +65,7 @@ def generate(
     target: Any,
     prompt: str,
     system_prompt: str | None = None,
+    presence_penalty: float | None = None,
 ) -> dict[str, Any]:
     """Generate one response using an already-loaded Transformers model."""
     import torch
@@ -69,13 +89,17 @@ def generate(
         if tokenizer.pad_token_id is not None
         else tokenizer.eos_token_id
     )
+    generation_kwargs: dict[str, Any] = {
+        **GENERATION,
+        "eos_token_id": generation_eos_token_ids(model, tokenizer),
+        "pad_token_id": pad_token_id,
+    }
+    if presence_penalty is not None:
+        generation_kwargs["logits_processor"] = [
+            PresencePenaltyLogitsProcessor(input_tokens, presence_penalty)
+        ]
     with torch.inference_mode():
-        output = model.generate(
-            **inputs,
-            **GENERATION,
-            eos_token_id=generation_eos_token_ids(model, tokenizer),
-            pad_token_id=pad_token_id,
-        )
+        output = model.generate(**inputs, **generation_kwargs)
     generated = output[0, input_tokens:]
     output_tokens = len(generated)
     return {
@@ -89,7 +113,7 @@ def generate(
 
 @contextmanager
 def local_generator(
-    model_name: str, seed: int
+    model_name: str, seed: int, presence_penalty: float | None = None
 ) -> Iterator[tuple[Generator, dict[str, Any]]]:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -111,7 +135,7 @@ def local_generator(
         "model_load_seconds": time.perf_counter() - started,
     }
     yield lambda prompt, system_prompt: generate(
-        model, tokenizer, target, prompt, system_prompt
+        model, tokenizer, target, prompt, system_prompt, presence_penalty
     ), metadata
 
 

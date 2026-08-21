@@ -5,7 +5,11 @@ import pytest
 import torch
 
 from simple_llm.experiment import summarize_inference
-from simple_llm.inference import generate, generate_predictions
+from simple_llm.inference import (
+    PresencePenaltyLogitsProcessor,
+    generate,
+    generate_predictions,
+)
 from simple_llm.rule_scoring import score_predictions
 
 
@@ -35,6 +39,58 @@ def test_generate_stops_on_model_and_chat_eos_tokens() -> None:
 
     assert model.kwargs["eos_token_id"] == [248044, 248046]
     assert model.kwargs["pad_token_id"] == 248044
+    assert "logits_processor" not in model.kwargs
+    assert result["response"] == "answer"
+
+
+def test_presence_penalty_applies_once_to_generated_tokens_only() -> None:
+    processor = PresencePenaltyLogitsProcessor(prompt_length=2, penalty=1.5)
+    input_ids = torch.tensor([[10, 11, 3, 3, 4]])
+    scores = torch.zeros((1, 12))
+
+    result = processor(input_ids, scores)
+
+    assert result[0, 3].item() == -1.5
+    assert result[0, 4].item() == -1.5
+    assert result[0, 10].item() == 0
+    assert result[0, 11].item() == 0
+    assert torch.equal(scores, torch.zeros((1, 12)))
+
+
+def test_generate_passes_configured_logits_processor() -> None:
+    class Tokenizer:
+        eos_token_id = 248046
+        pad_token_id = 248044
+
+        def apply_chat_template(self, *args, **kwargs):
+            return "formatted prompt"
+
+        def __call__(self, *args, **kwargs):
+            return {"input_ids": torch.tensor([[10, 11]])}
+
+        def decode(self, *args, **kwargs):
+            return "answer"
+
+    class Model:
+        generation_config = SimpleNamespace(eos_token_id=248044)
+
+        def generate(self, **kwargs):
+            self.kwargs = kwargs
+            return torch.tensor([[10, 11, 20, 248046]])
+
+    model = Model()
+    result = generate(
+        model,
+        Tokenizer(),
+        torch.device("cpu"),
+        "prompt",
+        presence_penalty=1.5,
+    )
+
+    assert isinstance(
+        model.kwargs["logits_processor"][0], PresencePenaltyLogitsProcessor
+    )
+    assert model.kwargs["logits_processor"][0].penalty == 1.5
     assert result["response"] == "answer"
 
 
