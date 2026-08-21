@@ -9,6 +9,7 @@ from simple_llm.sft_answers import (
     AnswerRecord,
     CORRECTNESS_PROMPT,
     GeneratedAnswer,
+    QUALITY_PROMPT,
     SIMPLE_ENGLISH_PROMPT,
     answer_instruction,
     generate_answer,
@@ -57,9 +58,18 @@ def test_answer_instruction_contains_simple_english_prompt_and_request() -> None
 
     assert SIMPLE_ENGLISH_PROMPT in instruction
     assert CORRECTNESS_PROMPT in instruction
+    assert QUALITY_PROMPT in instruction
     assert prompt.prompt in instruction
     assert "Answer the user request directly" in instruction
     assert "final_response" in instruction
+
+
+def test_quality_prompt_disallows_unrequested_headings() -> None:
+    assert (
+        "Do not use a title, heading, or section label unless the user explicitly "
+        "requests one."
+    ) in QUALITY_PROMPT
+    assert "Begin directly with the answer." in QUALITY_PROMPT
 
 
 def test_generate_answer_uses_one_call() -> None:
