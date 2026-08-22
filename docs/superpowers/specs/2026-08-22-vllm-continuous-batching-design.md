@@ -78,20 +78,19 @@ only for the vLLM backend.
 
 ## Model and adapter handling
 
-The vLLM class loads the base model directly through vLLM. For base-model
-experiments, no adapter is supplied. For SFT experiments, the adapter path is
-validated with the existing `training_adapter_path` and
-`validate_adapter_config` checks before constructing a vLLM `LoRARequest`.
+The vLLM class loads the base model directly through vLLM for base-model
+experiments. For the Qwen3.5 SFT experiment, the adapter path is validated with
+the existing `training_adapter_path` and `validate_adapter_config` checks, then
+merged into a cached model artifact before the engine starts. vLLM 0.17's
+Qwen3.5 fused-projection LoRA path can fail during engine warm-up, so native
+`LoRARequest` loading is intentionally disabled for this validation path.
 
-The current path's effective LoRA scale is `0.25`. The first implementation
-will materialize a vLLM-loadable adapter variant whose effective scaling
-matches `0.25`, verify its config and weights, and pass that adapter to every
-request. Materialization stages in a temporary sibling and atomically installs
-a self-validating cache with a source/destination manifest marker; stale, raw,
-or incomplete destinations are never reused. If the tested vLLM release
-cannot reproduce the scale without changing weights, the fallback is to
-create a merged, scaled model artifact before starting the engine; that
-fallback is a validation blocker, not an untracked behavior change.
+The current path's effective LoRA scale is `0.25`. PEFT applies that scale,
+merges the adapter, and writes the result to a temporary sibling before an
+atomic install. A source-manifest marker validates reuse; stale or incomplete
+artifacts are rebuilt. The engine loads the merged model with
+`language_model_only=True`, preserving the text-only workload while retaining
+vLLM continuous batching.
 
 ## Sampling and stop behavior
 

@@ -16,7 +16,7 @@
 - Preserve the existing `predictions.jsonl` schema, evaluation-order prefix contract, incremental flushing, and `--resume` validation.
 - The initial Modal concurrency is `@modal.concurrent(max_inputs=16, target_inputs=16)` and is tuned only from benchmark evidence.
 - Use vLLM-native `SamplingParams` penalties first; do not add a custom repetition processor unless validation shows a meaningful regression.
-- Preserve the current effective SFT LoRA scale of `0.25`; never silently serve the raw adapter.
+- Preserve the current effective SFT LoRA scale of `0.25`; never silently serve the raw adapter. Qwen3.5 SFT uses a cached PEFT-merged model because vLLM 0.17 native LoRA activation can fail on fused projections.
 - Acceptance requires lower inference wall time than Experiment 07, no new systematic failures, no lower validity rate, and no rule-score mean decrease greater than `0.02` absolute.
 - Pin `vllm==0.17.0` in the Modal CUDA image; this ruling remains unverified until Task 5 smoke-tests the exact `Qwen/Qwen3.5-4B` path. Do not add vLLM to the host dependency set because local runs must not install the GPU serving stack.
 
@@ -214,7 +214,7 @@ Define `VLLMModel` with `@app.cls(...)` and class-level `@modal.concurrent(max_i
 
 - [ ] **Step 4: Initialize and warm the AsyncLLM engine**
 
-In `@modal.enter`, load the tokenizer, validate the adapter run when present, materialize the scaled adapter under the container cache, construct `AsyncEngineArgs`, create `AsyncLLM.from_engine_args(...)`, build metadata including vLLM version, GPU, model revision, adapter identity/scale, and concurrency, then issue one short warm-up request. Do not merge the adapter into the base model in the vLLM path unless the scaled-LoRA fallback is explicitly required by validation.
+ In `@modal.enter`, load the tokenizer, validate the adapter run when present, materialize the scaled PEFT-merged model under the container cache, construct `AsyncEngineArgs` with `enable_lora=False` and `language_model_only=True`, create `AsyncLLM.from_engine_args(...)`, build metadata including vLLM version, GPU, model revision, adapter identity/scale, and concurrency, then issue one short warm-up request.
 
 - [ ] **Step 5: Implement the async request method and cleanup**
 
