@@ -5,7 +5,7 @@ import pytest
 import torch
 from transformers import RepetitionPenaltyLogitsProcessor
 
-from simple_llm.experiment import summarize_inference
+from simple_llm.experiment_runner import summarize_inference
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
     generate,
