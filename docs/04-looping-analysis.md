@@ -52,14 +52,14 @@ Its most common six-word sequence appeared 578 times. Sampling also produced com
 
 The first three Experiment 05 attempts are incomplete. Their counts describe the saved output, not full benchmark runs.
 
-| Run | Decoder and penalties | Saved responses | Truncated | Severe loops |
-| --- | --- | ---: | ---: | ---: |
-| Experiment 05, attempt 1 | Greedy, adapter scale 0.5 | 58 | 10 | 10 |
-| Experiment 05, attempt 2 | Sampling, adapter scale 0.5 | 72 | 5 | 5 |
-| Experiment 05, attempt 3 | Sampling, adapter scale 0.25 | 75 | 2 | 1 |
-| Experiment 05, final | Sampling, revised adapter at scale 0.25 | 99 visible | 2 | 2 |
-| Experiment 06 | Same setup, presence 1.5 | 100 | 0 | 0 |
-| Experiment 07 | Same setup, presence 0.5 and repetition 1.05 | 100 | 0 | 0 |
+| Run                      | Decoder and penalties                        | Saved responses | Truncated | Severe loops |
+| ------------------------ | -------------------------------------------- | --------------: | --------: | -----------: |
+| Experiment 05, attempt 1 | Greedy, adapter scale 0.5                    |              58 |        10 |           10 |
+| Experiment 05, attempt 2 | Sampling, adapter scale 0.5                  |              72 |         5 |            5 |
+| Experiment 05, attempt 3 | Sampling, adapter scale 0.25                 |              75 |         2 |            1 |
+| Experiment 05, final     | Sampling, revised adapter at scale 0.25      |      99 visible |         2 |            2 |
+| Experiment 06            | Same setup, presence 1.5                     |             100 |         0 |            0 |
+| Experiment 07            | Same setup, presence 0.5 and repetition 1.05 |             100 |         0 |            0 |
 
 A severe loop means that one normalized six-word sequence appears at least 15 times. This is a retrospective check and is not part of the current scorer.
 
@@ -89,15 +89,15 @@ Both are single stochastic runs. Paired confidence intervals measure variation a
 
 ### Generation
 
-| Measure | Experiment 05 | Experiment 06 | Experiment 07 |
-| --- | ---: | ---: | ---: |
-| Truncated responses | 2 | 0 | 0 |
-| Severe loops | 2 | 0 | 0 |
-| Mean output tokens | 679.2 | 643.6 | 622.3 |
-| Median output tokens | 613 | 567 | 563.5 |
-| Answers at least 1,000 tokens | 18 of 99 visible | 19 | 12 |
-| Mean generation time | 35.71 s | 33.62 s | 39.06 s |
-| Output throughput | 19.02 tok/s | 19.14 tok/s | 15.93 tok/s |
+| Measure                       |    Experiment 05 | Experiment 06 | Experiment 07 |
+| ----------------------------- | ---------------: | ------------: | ------------: |
+| Truncated responses           |                2 |             0 |             0 |
+| Severe loops                  |                2 |             0 |             0 |
+| Mean output tokens            |            679.2 |         643.6 |         622.3 |
+| Median output tokens          |              613 |           567 |         563.5 |
+| Answers at least 1,000 tokens | 18 of 99 visible |            19 |            12 |
+| Mean generation time          |          35.71 s |       33.62 s |       39.06 s |
+| Output throughput             |      19.02 tok/s |   19.14 tok/s |   15.93 tok/s |
 
 Experiment 07 was shorter than Experiment 06 on 50 prompts and longer on 50. Its paired mean reduction was 21 tokens, with a confidence interval that included zero. The output-length difference is therefore small, although Experiment 07 produced fewer answers over 1,000 tokens.
 
@@ -105,21 +105,21 @@ Experiment 07's mean generation time was 16.2% higher and throughput was 16.8% l
 
 ### Judge-assessed quality
 
-| Judge dimension | Experiment 05 | Experiment 06 | Experiment 07 |
-| --- | ---: | ---: | ---: |
-| Clarity and coherence | 90.63% | 92.68% | 92.09% |
-| Semantic simplicity | 79.21% | 83.25% | 85.46% |
-| Task fulfillment | 95.57% | 95.92% | 95.71% |
-| Technical adequacy | 71.88% | 71.43% | 70.15% |
+| Judge dimension       | Experiment 05 | Experiment 06 | Experiment 07 |
+| --------------------- | ------------: | ------------: | ------------: |
+| Clarity and coherence |        90.63% |        92.68% |        92.09% |
+| Semantic simplicity   |        79.21% |        83.25% |        85.46% |
+| Task fulfillment      |        95.57% |        95.92% |        95.71% |
+| Technical adequacy    |        71.88% |        71.43% |        70.15% |
 
 Paired Experiment 07 changes relative to Experiment 06 were small:
 
-| Dimension | Paired change | Approximate 95% CI |
-| --- | ---: | ---: |
-| Clarity and coherence | -0.51 pp | -3.26 to +2.24 pp |
-| Semantic simplicity | +2.06 pp | -1.58 to +5.70 pp |
-| Task fulfillment | -0.26 pp | -3.17 to +2.66 pp |
-| Technical adequacy | -1.28 pp | -5.74 to +3.18 pp |
+| Dimension             | Paired change | Approximate 95% CI |
+| --------------------- | ------------: | -----------------: |
+| Clarity and coherence |      -0.51 pp |  -3.26 to +2.24 pp |
+| Semantic simplicity   |      +2.06 pp |  -1.58 to +5.70 pp |
+| Task fulfillment      |      -0.26 pp |  -3.17 to +2.66 pp |
+| Technical adequacy    |      -1.28 pp |  -5.74 to +3.18 pp |
 
 Every interval includes zero. Experiment 07 is comparable to Experiment 06 on all four dimensions.
 
@@ -131,14 +131,14 @@ Loop prevention does not fix factual errors. Several concise Experiment 07 answe
 
 For sentence length and long-sentence fraction, lower is better. For other metrics, higher is better.
 
-| Rule metric | Experiment 05 | Experiment 06 | Experiment 07 |
-| --- | ---: | ---: | ---: |
-| Average sentence length | 15.37 | 16.15 | 15.32 |
-| Long-sentence fraction | 15.76% | 17.83% | 15.35% |
-| Sentence mechanics | 91.54% | 88.89% | 88.68% |
-| Verb forms and modals | 89.11% | 86.77% | 88.09% |
-| Controlled vocabulary | 54.03% | 50.30% | 49.60% |
-| Terminology consistency | 84.69% | 77.00% | 78.00% |
+| Rule metric             | Experiment 05 | Experiment 06 | Experiment 07 |
+| ----------------------- | ------------: | ------------: | ------------: |
+| Average sentence length |         15.37 |         16.15 |         15.32 |
+| Long-sentence fraction  |        15.76% |        17.83% |        15.35% |
+| Sentence mechanics      |        91.54% |        88.89% |        88.68% |
+| Verb forms and modals   |        89.11% |        86.77% |        88.09% |
+| Controlled vocabulary   |        54.03% |        50.30% |        49.60% |
+| Terminology consistency |        84.69% |        77.00% |        78.00% |
 
 Experiment 07 is mechanically comparable to Experiment 06. No paired rule change between them is conclusive.
 
