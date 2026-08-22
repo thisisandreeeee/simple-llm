@@ -35,6 +35,8 @@ from .vllm import (
 VLLM_CACHE_DIR = "/cache/vllm"
 CONCURRENCY = 16
 MERGED_MODEL_MARKER = ".simple-llm-merged-model.json"
+MERGED_MODEL_VERSION = 3
+VLLM_VERSION = "0.27.0"
 
 app = modal.App("simple-llm-vllm-inference")
 vllm_cache = modal.Volume.from_name("simple-llm-vllm-cache", create_if_missing=True)
@@ -42,7 +44,7 @@ image = (
     modal.Image.from_registry(
         "nvidia/cuda:12.9.0-devel-ubuntu22.04", add_python="3.13"
     )
-    .uv_pip_install("vllm==0.17.0", "huggingface-hub==0.36.0", "peft==0.20.0")
+    .uv_pip_install(f"vllm=={VLLM_VERSION}", "peft==0.20.0")
     .env(
         {
             "HF_HOME": CACHE_DIR,
@@ -58,7 +60,6 @@ merge_image = (
         "peft==0.20.0",
         "torch==2.11.0",
         "transformers==5.5.0",
-        "huggingface-hub==0.36.0",
     )
     .env({"HF_HOME": CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
     .add_local_python_source("simple_llm")
@@ -165,6 +166,7 @@ class VLLMModel:
 
         engine_args = runtime.AsyncEngineArgs(
             model=str(model_source),
+            tokenizer=self.model_name,
             seed=self.seed,
             enable_lora=False,
             language_model_only=True,
@@ -251,7 +253,7 @@ def prepare_merged_model(
     import gc
 
     import torch
-    from transformers import AutoTokenizer, Qwen3_5ForConditionalGeneration
+    from transformers import Qwen3_5ForConditionalGeneration
 
     from .modal import load_peft_adapter, scale_peft_adapter
 
@@ -271,13 +273,17 @@ def prepare_merged_model(
         model = load_peft_adapter(model, adapter_path)
         scale_peft_adapter(model, scale)
         model = model.merge_and_unload(safe_merge=True)
+        # Qwen/Qwen3.5-4B is distributed as a text-only state dict while its
+        # base config names the multimodal class.  Mark the merged artifact as
+        # the text-only architecture so vLLM loads `model.*` weights directly
+        # instead of expecting the multimodal `language_model.model.*` prefix.
+        model.config.architectures = ["Qwen3_5ForCausalLM"]
         model.eval()
         model.save_pretrained(stage, safe_serialization=True)
-        AutoTokenizer.from_pretrained(model_name).save_pretrained(stage)
         (stage / MERGED_MODEL_MARKER).write_text(
             json.dumps(
                 {
-                    "version": 1,
+                    "version": MERGED_MODEL_VERSION,
                     "model_name": model_name,
                     "scale": scale,
                     "source_manifest": source_manifest,
@@ -323,7 +329,7 @@ def _valid_merged_model(
             (destination / MERGED_MODEL_MARKER).read_text(encoding="utf-8")
         )
         return (
-            marker.get("version") == 1
+            marker.get("version") == MERGED_MODEL_VERSION
             and marker.get("model_name") == model_name
             and marker.get("scale") == scale
             and marker.get("source_manifest") == source_manifest

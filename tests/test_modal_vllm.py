@@ -67,7 +67,7 @@ def test_runtime_imports_async_engine_from_supported_vllm_modules(monkeypatch) -
         )
     )
     vllm = types.ModuleType("vllm")
-    vllm.__version__ = "0.17.0"
+    vllm.__version__ = "0.27.0"
     vllm.SamplingParams = FakeParams
     engine_arg_utils = types.ModuleType("vllm.engine.arg_utils")
     engine_arg_utils.AsyncEngineArgs = FakeEngineArgs
@@ -116,7 +116,7 @@ def fake_runtime(engine):
         SamplingParams=FakeParams,
         LoRARequest=FakeLoRARequest,
         AutoTokenizer=FakeTokenizer,
-        vllm_version="0.17.0",
+        vllm_version="0.27.0",
         gpu_name="Fake GPU",
         gpu_memory_gib=24.0,
     )
@@ -148,6 +148,7 @@ def test_lifecycle_generates_with_unique_request_ids_and_cleans_up(monkeypatch) 
 
     assert runtime.AsyncLLM.engine_args.kwargs == {
         "model": "model/name",
+        "tokenizer": "model/name",
         "seed": 42,
         "enable_lora": False,
         "language_model_only": True,
@@ -173,7 +174,7 @@ def test_lifecycle_generates_with_unique_request_ids_and_cleans_up(monkeypatch) 
     assert result["input_tokens"] == 2
     assert result["output_tokens"] == 2
     assert result["truncated"] is False
-    assert model.metadata["vllm_version"] == "0.17.0"
+    assert model.metadata["vllm_version"] == "0.27.0"
     assert model.metadata["gpu_actual"] == "Fake GPU"
     assert model.metadata["model_revision"] == "revision-1"
     assert model.metadata["concurrency"] == 16
@@ -219,6 +220,7 @@ def test_adapter_is_merged_before_vllm_load(monkeypatch, tmp_path) -> None:
 
     assert runtime.AsyncLLM.engine_args.kwargs == {
         "model": str(merged_path),
+        "tokenizer": "model/name",
         "seed": 42,
         "enable_lora": False,
         "language_model_only": True,
@@ -257,6 +259,10 @@ def test_prepare_merged_model_scales_and_reuses_cached_artifact(monkeypatch, tmp
     calls = []
 
     class FakeMergedModel:
+        config = types.SimpleNamespace(
+            architectures=["Qwen3_5ForConditionalGeneration"]
+        )
+
         def to(self, device):
             assert device == "cuda"
             return self
@@ -271,7 +277,10 @@ def test_prepare_merged_model_scales_and_reuses_cached_artifact(monkeypatch, tmp
 
         def save_pretrained(self, path, safe_serialization):
             assert safe_serialization is True
-            Path(path, "config.json").write_text("{}", encoding="utf-8")
+            Path(path, "config.json").write_text(
+                json.dumps({"architectures": self.config.architectures}),
+                encoding="utf-8",
+            )
 
     class FakeModelClass:
         @classmethod
@@ -305,6 +314,7 @@ def test_prepare_merged_model_scales_and_reuses_cached_artifact(monkeypatch, tmp
     assert modal_vllm.prepare_merged_model(adapter, "model/name", 0.25, destination) == destination
     assert calls == ["load", "adapter", 0.25, "merge", "empty"]
     assert (destination / modal_vllm.MERGED_MODEL_MARKER).is_file()
+    assert FakeMergedModel.config.architectures == ["Qwen3_5ForCausalLM"]
 
     def fail_if_loaded(*args, **kwargs):
         raise AssertionError("cached merged model should be reused")
