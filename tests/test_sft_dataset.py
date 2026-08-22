@@ -1,6 +1,6 @@
-from simple_llm.sft_answers import AnswerRecord
-from simple_llm.sft_dataset import split_dataset
-from simple_llm.sft_prompts import PromptRecord
+from simple_llm.sft.answers import AnswerRecord
+from simple_llm.sft.dataset import split_dataset
+from simple_llm.sft.prompts import PromptRecord
 
 
 def test_split_dataset_is_deterministic_and_stratified_by_subject():

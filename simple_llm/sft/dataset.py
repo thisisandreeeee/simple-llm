@@ -7,8 +7,8 @@ from collections import defaultdict
 from pathlib import Path
 from random import Random
 
-from .sft_answers import AnswerRecord, load_answer_records, load_prompts
-from .sft_prompts import (
+from .answers import AnswerRecord, load_answer_records, load_prompts
+from .prompts import (
     DATA_DIR,
     PromptRecord,
     SFTExample,

@@ -11,7 +11,7 @@ from typing import Any
 
 import modal
 
-from simple_llm.inference import Generator, generate
+from .local import Generator, generate
 
 CACHE_DIR = "/cache/huggingface"
 TRAINING_DIR = "/training"

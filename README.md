@@ -64,7 +64,7 @@ Configure the DeepSeek credentials described above before running the generation
 1. Generate user prompts:
 
    ```bash
-   uv run python -m simple_llm.sft_prompts --count 3000
+   uv run python -m simple_llm.sft.prompts --count 3000
    ```
 
    This writes prompts to `data/sft_prompts.jsonl`. Generation resumes from existing prompt IDs. Use `--no-resume` to regenerate the output.
@@ -72,7 +72,7 @@ Configure the DeepSeek credentials described above before running the generation
 2. Generate assistant answers:
 
    ```bash
-   uv run python -m simple_llm.sft_answers --count 500
+   uv run python -m simple_llm.sft.answers --count 500
    ```
 
    Answers are generated for the first `--count` prompts and appended by ID. Rerunning the command resumes unfinished answers.
@@ -80,7 +80,7 @@ Configure the DeepSeek credentials described above before running the generation
 3. Build the SFT dataset:
 
    ```bash
-   uv run python -m simple_llm.sft_dataset
+   uv run python -m simple_llm.sft.dataset
    ```
 
    This writes a deterministic, subject-stratified 90/10 split to `data/sft_train.jsonl` and `data/sft_eval.jsonl`.
@@ -90,13 +90,13 @@ Configure the DeepSeek credentials described above before running the generation
 Run a one-step smoke test on an L4 before starting the full job:
 
 ```bash
-uv run python simple_llm/sft_training.py --run-name sft-smoke --max-steps 1
+uv run python -m simple_llm.sft.training --run-name sft-smoke --max-steps 1
 ```
 
 Start the two-epoch run in detached mode so it continues after the terminal closes:
 
 ```bash
-uv run python simple_llm/sft_training.py --detach
+uv run python -m simple_llm.sft.training --detach
 ```
 
 The script trains a bf16 LoRA adapter for Qwen/Qwen3.5-4B. Use `--gpu A10` or `--gpu L40S` to select a GPU and `--run-name` to name runs. Training uses Qwen3.5's non-thinking chat format, evaluates every 25 steps, and restores the checkpoint with the lowest evaluation loss.

@@ -183,7 +183,7 @@ def run_experiment(
 
     random.seed(SEED)
     if args.backend == "modal":
-        from simple_llm.modal_inference import modal_generator
+        from simple_llm.inference.modal import modal_generator
 
         generator_context = modal_generator(
             model,

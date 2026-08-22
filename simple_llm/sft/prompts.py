@@ -14,9 +14,9 @@ from difflib import SequenceMatcher
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .llm_runtime import create_deepseek_model, run_concurrently
+from .runtime import create_deepseek_model, run_concurrently
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 DEFAULT_COUNT = 3_000
 DEFAULT_SEED = 42

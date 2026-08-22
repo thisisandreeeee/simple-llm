@@ -3,7 +3,7 @@ import warnings
 
 import pytest
 
-from simple_llm.modal_inference import (
+from simple_llm.inference.modal import (
     ADAPTER_MODEL_CLASS,
     load_peft_adapter,
     scale_peft_adapter,

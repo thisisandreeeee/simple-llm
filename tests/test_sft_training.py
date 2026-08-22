@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from simple_llm.sft_training import load_dataset_rows, to_prompt_completion_rows
+from simple_llm.sft.training import load_dataset_rows, to_prompt_completion_rows
 
 
 def test_load_dataset_rows_validates_two_message_conversations(tmp_path):
