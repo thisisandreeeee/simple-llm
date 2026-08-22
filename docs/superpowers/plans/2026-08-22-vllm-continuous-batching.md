@@ -214,7 +214,7 @@ Define `VLLMModel` with `@app.cls(...)` and class-level `@modal.concurrent(max_i
 
 - [ ] **Step 4: Initialize and warm the AsyncLLM engine**
 
- In `@modal.enter`, load the tokenizer, validate the adapter run when present, materialize the scaled PEFT-merged model under the container cache, construct `AsyncEngineArgs` with `enable_lora=False` and `language_model_only=True`, create `AsyncLLM.from_engine_args(...)`, build metadata including vLLM version, GPU, model revision, adapter identity/scale, and concurrency, then issue one short warm-up request.
+ In a separate Transformers 5.5 Modal function, validate the adapter run and materialize the scaled PEFT-merged model under the container cache. Then `@modal.enter` loads the tokenizer, validates the prepared source, constructs `AsyncEngineArgs` with `enable_lora=False` and `language_model_only=True`, creates `AsyncLLM.from_engine_args(...)`, builds metadata including vLLM version, GPU, model revision, adapter identity/scale, and concurrency, and issues one short warm-up request.
 
 - [ ] **Step 5: Implement the async request method and cleanup**
 

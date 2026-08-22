@@ -52,6 +52,40 @@ image = (
     )
     .add_local_python_source("simple_llm")
 )
+merge_image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .uv_pip_install(
+        "peft==0.20.0",
+        "torch==2.11.0",
+        "transformers==5.5.0",
+        "huggingface-hub==0.36.0",
+    )
+    .env({"HF_HOME": CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
+    .add_local_python_source("simple_llm")
+)
+
+
+@app.function(
+    image=merge_image,
+    volumes={
+        CACHE_DIR: cache,
+        TRAINING_DIR: training,
+        VLLM_CACHE_DIR: vllm_cache,
+    },
+    secrets=[modal.Secret.from_name("huggingface")],
+    timeout=60 * 60,
+)
+def build_merged_model(
+    adapter_run: str, model_name: str, scale: float, destination: str
+) -> str:
+    """Build the PEFT-merged artifact in a Transformers-compatible image."""
+    adapter_path = Path(training_adapter_path(adapter_run))
+    validate_adapter_config(adapter_path, model_name)
+    merged_path = prepare_merged_model(
+        adapter_path, model_name, scale, Path(destination)
+    )
+    vllm_cache.commit()
+    return str(merged_path)
 
 
 def _runtime() -> SimpleNamespace:
@@ -93,6 +127,7 @@ class VLLMModel:
     model_name: str = modal.parameter()
     seed: int = modal.parameter()
     adapter_run: str = modal.parameter(default="")
+    model_source: str = modal.parameter(default="")
     presence_penalty: str = modal.parameter(default="0")
     repetition_penalty: str = modal.parameter(default="0")
 
@@ -113,13 +148,11 @@ class VLLMModel:
         if self.adapter_run:
             adapter_path = Path(training_adapter_path(self.adapter_run))
             validate_adapter_config(adapter_path, self.model_name)
-            destination = Path(VLLM_CACHE_DIR) / "merged" / self.adapter_run
-            model_source = prepare_merged_model(
-                adapter_path,
-                self.model_name,
-                ADAPTER_SCALE,
-                destination,
-            )
+            if not self.model_source:
+                raise RuntimeError(
+                    "Adapter runs require a prebuilt merged model source"
+                )
+            model_source = self.model_source
             adapter_metadata = {
                 "run": self.adapter_run,
                 "path": str(model_source),
@@ -313,10 +346,17 @@ def modal_vllm_generator(
     if adapter_run:
         training_adapter_path(adapter_run)
     with modal.enable_output(), app.run():
+        model_source = ""
+        if adapter_run:
+            destination = str(Path(VLLM_CACHE_DIR) / "merged" / adapter_run)
+            model_source = build_merged_model.with_options(gpu=gpu).remote(
+                adapter_run, model_name, ADAPTER_SCALE, destination
+            )
         remote = VLLMModel.with_options(gpu=gpu)(
             model_name=model_name,
             seed=seed,
             adapter_run=adapter_run or "",
+            model_source=model_source,
             presence_penalty=str(presence_penalty or 0.0),
             repetition_penalty=str(repetition_penalty or 0.0),
         )

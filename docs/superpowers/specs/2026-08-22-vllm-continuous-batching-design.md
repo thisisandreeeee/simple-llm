@@ -81,8 +81,11 @@ only for the vLLM backend.
 The vLLM class loads the base model directly through vLLM for base-model
 experiments. For the Qwen3.5 SFT experiment, the adapter path is validated with
 the existing `training_adapter_path` and `validate_adapter_config` checks, then
-merged into a cached model artifact before the engine starts. vLLM 0.17's
-Qwen3.5 fused-projection LoRA path can fail during engine warm-up, so native
+merged by a separate Transformers 5.5 Modal function into a cached model
+artifact before the vLLM container starts. vLLM 0.17 pins Transformers below
+5.0, while Qwen3.5's PEFT model class requires Transformers 5.x; keeping the
+merge worker separate avoids that dependency conflict. vLLM 0.17's Qwen3.5
+fused-projection LoRA path can also fail during engine warm-up, so native
 `LoRARequest` loading is intentionally disabled for this validation path.
 
 The current path's effective LoRA scale is `0.25`. PEFT applies that scale,
