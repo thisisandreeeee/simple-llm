@@ -54,7 +54,9 @@ def _runtime() -> SimpleNamespace:
     import torch
     import vllm
     from transformers import AutoTokenizer
-    from vllm import AsyncEngineArgs, AsyncLLM, SamplingParams
+    from vllm import SamplingParams
+    from vllm.engine.arg_utils import AsyncEngineArgs
+    from vllm.v1.engine.async_llm import AsyncLLM
     from vllm.lora.request import LoRARequest
 
     properties = torch.cuda.get_device_properties(0)

@@ -1,4 +1,6 @@
 import asyncio
+import sys
+import types
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -54,6 +56,48 @@ class FakeEngine:
 
     async def shutdown(self):
         self.shutdown_called = True
+
+
+def test_runtime_imports_async_engine_from_supported_vllm_modules(monkeypatch) -> None:
+    torch = types.ModuleType("torch")
+    torch.cuda = types.SimpleNamespace(
+        get_device_properties=lambda index: types.SimpleNamespace(
+            name="Fake GPU", total_memory=24 * 1024**3
+        )
+    )
+    vllm = types.ModuleType("vllm")
+    vllm.__version__ = "0.17.0"
+    vllm.SamplingParams = FakeParams
+    engine_arg_utils = types.ModuleType("vllm.engine.arg_utils")
+    engine_arg_utils.AsyncEngineArgs = FakeEngineArgs
+    async_llm = types.ModuleType("vllm.v1.engine.async_llm")
+    async_llm.AsyncLLM = object
+    lora_request = types.ModuleType("vllm.lora.request")
+    lora_request.LoRARequest = FakeLoRARequest
+    transformers = types.ModuleType("transformers")
+    transformers.AutoTokenizer = FakeTokenizer
+    modules = {
+        "torch": torch,
+        "vllm": vllm,
+        "vllm.engine": types.ModuleType("vllm.engine"),
+        "vllm.engine.arg_utils": engine_arg_utils,
+        "vllm.v1": types.ModuleType("vllm.v1"),
+        "vllm.v1.engine": types.ModuleType("vllm.v1.engine"),
+        "vllm.v1.engine.async_llm": async_llm,
+        "vllm.lora": types.ModuleType("vllm.lora"),
+        "vllm.lora.request": lora_request,
+        "transformers": transformers,
+    }
+    monkeypatch.setitem(sys.modules, "torch", torch)
+    monkeypatch.setitem(sys.modules, "vllm", vllm)
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    runtime = modal_vllm._runtime()
+
+    assert runtime.AsyncEngineArgs is FakeEngineArgs
+    assert runtime.AsyncLLM is async_llm.AsyncLLM
+    assert runtime.SamplingParams is FakeParams
 
 
 def fake_runtime(engine):
