@@ -177,8 +177,7 @@ failures are recorded immediately.
 Todo:
 
 - Serve inference with vLLM
-- Benchmark against SimpleEnglish skill
-- Publish the LoRA adapter, model card, training configuration, evaluation results, and base-model attribution to Hugging Face
+- Publish to hugging face: adapter, model card, training configs, evaluation results, base-model attribution
 
 Later:
 
