@@ -1,13 +1,17 @@
+import asyncio
 import json
+import sys
+from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
 import torch
 from transformers import RepetitionPenaltyLogitsProcessor
 
-from simple_llm.experiment_runner import summarize_inference
+from simple_llm import experiment_runner
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
+    async_generate_predictions,
     generate,
     generate_predictions,
 )
@@ -160,7 +164,7 @@ def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
     assert "validity" not in saved[0]
     assert "scores" not in saved[0]
     assert saved[1]["error"] == "RuntimeError: expected"
-    diagnostics = summarize_inference(results)
+    diagnostics = experiment_runner.summarize_inference(results)
     assert diagnostics["output_tokens_per_second"] == 10
     assert diagnostics["successful_count"] == 1
 
@@ -171,6 +175,26 @@ def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
     assert scores["domain_score_means"]["ONE"]["average_sentence_length"] == 4
     assert scores["results"][0]["scores"]["average_sentence_length"] == 4
     assert scores["results"][1]["error"] == "RuntimeError: expected"
+
+
+def test_summarize_inference_reports_generation_and_wall_throughput() -> None:
+    results = [
+        {
+            "output_tokens": 12,
+            "generation_seconds": 3.0,
+            "truncated": False,
+        },
+        {
+            "output_tokens": 8,
+            "generation_seconds": 1.0,
+            "truncated": False,
+        },
+    ]
+
+    summary = experiment_runner.summarize_inference(results, wall_seconds=2.0)
+
+    assert summary["output_tokens_per_second"] == 5.0
+    assert summary["wall_output_tokens_per_second"] == 10.0
 
 
 def test_generate_predictions_resumes_existing_prefix(tmp_path) -> None:
@@ -205,3 +229,183 @@ def test_generate_predictions_rejects_mismatched_prefix(tmp_path) -> None:
             lambda *_: {},
             predictions_path,
         )
+
+
+def test_async_generate_predictions_flushes_in_evaluation_order(tmp_path) -> None:
+    async def generator(prompt: str, system_prompt: str | None):
+        await asyncio.sleep(0.02 if prompt == "first" else 0.0)
+        return {"response": prompt}
+
+    predictions_path = tmp_path / "predictions.jsonl"
+    results = asyncio.run(
+        async_generate_predictions(
+            [{"id": "A", "prompt": "first"}, {"id": "B", "prompt": "second"}],
+            generator,
+            predictions_path,
+            max_in_flight=2,
+        )
+    )
+
+    assert [item["id"] for item in results] == ["A", "B"]
+    rows = [json.loads(line) for line in predictions_path.read_text().splitlines()]
+    assert [row["id"] for row in rows] == ["A", "B"]
+
+
+def test_async_generate_predictions_persists_request_error_and_continues(tmp_path) -> None:
+    async def generator(prompt: str, system_prompt: str | None):
+        if prompt == "bad":
+            return {"error": "RuntimeError: expected"}
+        return {"response": "ok"}
+
+    results = asyncio.run(
+        async_generate_predictions(
+            [{"id": "A", "prompt": "bad"}, {"id": "B", "prompt": "good"}],
+            generator,
+            tmp_path / "predictions.jsonl",
+        )
+    )
+
+    assert results[0]["error"] == "RuntimeError: expected"
+    assert results[1]["response"] == "ok"
+
+
+def test_async_generate_predictions_propagates_transport_failure_and_cancels_pending(
+    tmp_path,
+) -> None:
+    predictions_path = tmp_path / "predictions.jsonl"
+
+    async def scenario() -> None:
+        fail = asyncio.Event()
+        cancelled = asyncio.Event()
+        never = asyncio.Event()
+
+        async def generator(prompt: str, system_prompt: str | None):
+            if prompt == "first":
+                return {"response": "done"}
+            if prompt == "fatal":
+                await fail.wait()
+                raise RuntimeError("container lost")
+            try:
+                await never.wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+        task = asyncio.create_task(
+            async_generate_predictions(
+                [
+                    {"id": "A", "prompt": "first"},
+                    {"id": "B", "prompt": "fatal"},
+                    {"id": "C", "prompt": "pending"},
+                ],
+                generator,
+                predictions_path,
+                max_in_flight=3,
+            )
+        )
+        while not predictions_path.exists() or not predictions_path.read_text():
+            await asyncio.sleep(0)
+        fail.set()
+
+        with pytest.raises(RuntimeError, match="container lost"):
+            await asyncio.wait_for(task, timeout=0.5)
+        await asyncio.wait_for(cancelled.wait(), timeout=0.5)
+
+    asyncio.run(scenario())
+
+    rows = [json.loads(line) for line in predictions_path.read_text().splitlines()]
+    assert [(row["id"], row["response"]) for row in rows] == [("A", "done")]
+
+
+def _run_backend(monkeypatch, tmp_path, backend: str):
+    from simple_llm.inference import modal, modal_vllm
+
+    calls = []
+
+    @contextmanager
+    def modal_context(*args, **kwargs):
+        calls.append(("modal_context", args, kwargs))
+        yield lambda *_: {}, {
+            "gpu_actual": "test-gpu",
+            "runtime_version": "test-version",
+        }
+
+    @contextmanager
+    def vllm_context(*args, **kwargs):
+        calls.append(("vllm_context", args, kwargs))
+        yield lambda *_: {}, {
+            "gpu_actual": "test-gpu",
+            "runtime_version": "test-version",
+        }
+
+    def sync_writer(*args):
+        calls.append(("sync", args))
+        return []
+
+    async def async_writer(*args):
+        calls.append(("async", args))
+        return []
+
+    monkeypatch.setattr(experiment_runner, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        experiment_runner, "load_evals", lambda: [{"id": "A-1", "prompt": "p"}]
+    )
+    monkeypatch.setattr(experiment_runner, "git_info", lambda: {"commit": "test"})
+    monkeypatch.setattr(experiment_runner, "generate_predictions", sync_writer)
+    monkeypatch.setattr(
+        experiment_runner, "async_generate_predictions", async_writer, raising=False
+    )
+    monkeypatch.setattr(experiment_runner, "score_predictions", lambda *_: None)
+    monkeypatch.setattr(modal, "modal_generator", modal_context)
+    monkeypatch.setattr(modal_vllm, "modal_vllm_generator", vllm_context)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["experiment", "--backend", backend, "--adapter-run", "training-run"],
+    )
+
+    experiment_runner.run_experiment(
+        experiment="test",
+        model="Qwen/Qwen3.5-4B",
+        condition="test",
+        require_adapter_run=True,
+        presence_penalty=0.5,
+        repetition_penalty=1.05,
+    )
+
+    config_path = next((tmp_path / "runs").glob("*/config.json"))
+    return calls, json.loads(config_path.read_text())
+
+
+def test_vllm_backend_uses_async_writer_and_preserves_config(
+    monkeypatch, tmp_path
+) -> None:
+    calls, config = _run_backend(monkeypatch, tmp_path, "vllm")
+
+    assert [call[0] for call in calls] == ["vllm_context", "async"]
+    assert config["backend"] == "vllm"
+    assert config["gpu_actual"] == "test-gpu"
+    assert config["runtime_version"] == "test-version"
+    assert config["seed"] == 42
+    assert config["generation"] == {
+        "do_sample": True,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_new_tokens": 2048,
+        "logits_processor": [
+            {
+                "type": "repetition_penalty",
+                "penalty": 1.05,
+                "prompt_tokens": "included",
+            },
+            {"type": "presence_penalty", "penalty": 0.5},
+        ],
+    }
+
+
+def test_modal_backend_still_uses_sync_writer(monkeypatch, tmp_path) -> None:
+    calls, config = _run_backend(monkeypatch, tmp_path, "modal")
+
+    assert [call[0] for call in calls] == ["modal_context", "sync"]
+    assert config["generation"]["logits_processor"][0]["prompt_tokens"] == "ignored"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hashlib
 import json
 import random
@@ -13,7 +14,12 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from simple_llm.inference import GENERATION, generate_predictions, local_generator
+from simple_llm.inference import (
+    GENERATION,
+    async_generate_predictions,
+    generate_predictions,
+    local_generator,
+)
 from simple_llm.scoring.rule_scoring import score_predictions
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -75,6 +81,9 @@ def summarize_inference(
     }
     if wall_seconds is not None:
         summary["wall_seconds"] = wall_seconds
+        summary["wall_output_tokens_per_second"] = (
+            total_tokens / wall_seconds if wall_seconds else None
+        )
     return summary
 
 
@@ -94,7 +103,7 @@ def run_experiment(
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--limit", type=int, help="Run only the first N prompts.")
     parser.add_argument(
-        "--backend", choices=("local", "modal"), default=default_backend
+        "--backend", choices=("local", "modal", "vllm"), default=default_backend
     )
     parser.add_argument("--gpu", default="L4", help="Modal GPU type (default: L4).")
     parser.add_argument(
@@ -111,8 +120,8 @@ def run_experiment(
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be a positive integer")
-    if require_adapter_run and args.backend != "modal":
-        parser.error("--adapter-run is available only with --backend modal")
+    if require_adapter_run and args.backend not in ("modal", "vllm"):
+        parser.error("--adapter-run is available only with a Modal backend")
 
     run_dir = args.resume.resolve() if args.resume else None
     previous_config: dict[str, Any] | None = None
@@ -145,7 +154,9 @@ def run_experiment(
             {
                 "type": "repetition_penalty",
                 "penalty": repetition_penalty,
-                "prompt_tokens": "ignored",
+                "prompt_tokens": (
+                    "included" if args.backend == "vllm" else "ignored"
+                ),
             }
         )
     if presence_penalty is not None:
@@ -193,6 +204,17 @@ def run_experiment(
             presence_penalty=presence_penalty,
             repetition_penalty=repetition_penalty,
         )
+    elif args.backend == "vllm":
+        from simple_llm.inference.modal_vllm import modal_vllm_generator
+
+        generator_context = modal_vllm_generator(
+            model,
+            args.gpu,
+            SEED,
+            adapter_run=args.adapter_run if require_adapter_run else None,
+            presence_penalty=presence_penalty,
+            repetition_penalty=repetition_penalty,
+        )
     else:
         generator_context = local_generator(
             model, SEED, presence_penalty, repetition_penalty
@@ -213,9 +235,16 @@ def run_experiment(
         )
 
         started = time.perf_counter()
-        results = generate_predictions(
-            evals, generator, run_dir / "predictions.jsonl", system_prompt
-        )
+        if args.backend == "vllm":
+            results = asyncio.run(
+                async_generate_predictions(
+                    evals, generator, run_dir / "predictions.jsonl", system_prompt
+                )
+            )
+        else:
+            results = generate_predictions(
+                evals, generator, run_dir / "predictions.jsonl", system_prompt
+            )
         wall_seconds = time.perf_counter() - started
         (run_dir / "summary.json").write_text(
             json.dumps(summarize_inference(results, wall_seconds), indent=2) + "\n",

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Awaitable, Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ GENERATION = {
 }
 
 Generator = Callable[[str, str | None], dict[str, Any]]
+AsyncGenerator = Callable[[str, str | None], Awaitable[dict[str, Any]]]
 
 
 class PresencePenaltyLogitsProcessor(LogitsProcessor):
@@ -164,24 +166,7 @@ def generate_predictions(
 ) -> list[dict[str, Any]]:
     """Generate and incrementally persist each evaluation response."""
 
-    results: list[dict[str, Any]] = []
-    if predictions_path.exists():
-        try:
-            results = [
-                json.loads(line)
-                for line in predictions_path.read_text(encoding="utf-8").splitlines()
-                if line.strip()
-            ]
-        except (json.JSONDecodeError, OSError) as exc:
-            raise ValueError(f"Invalid predictions file: {predictions_path}") from exc
-        if len(results) > len(evals) or any(
-            result.get("id") != item["id"] or result.get("prompt") != item["prompt"]
-            for result, item in zip(results, evals)
-        ):
-            raise ValueError(
-                f"Existing predictions do not match the evaluation set: {predictions_path}"
-            )
-        print(f"Resuming after {len(results)}/{len(evals)} prompt(s)")
+    results = _existing_predictions(evals, predictions_path)
 
     with predictions_path.open("a" if results else "w", encoding="utf-8") as output:
         for index, item in enumerate(evals[len(results) :], len(results) + 1):
@@ -200,4 +185,97 @@ def generate_predictions(
             results.append(result)
             output.write(json.dumps(result, ensure_ascii=False) + "\n")
             output.flush()
+    return results
+
+
+def _existing_predictions(
+    evals: list[dict[str, str]], predictions_path: Path
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    if not predictions_path.exists():
+        return results
+    try:
+        results = [
+            json.loads(line)
+            for line in predictions_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except (json.JSONDecodeError, OSError) as exc:
+        raise ValueError(f"Invalid predictions file: {predictions_path}") from exc
+    if len(results) > len(evals) or any(
+        result.get("id") != item["id"] or result.get("prompt") != item["prompt"]
+        for result, item in zip(results, evals)
+    ):
+        raise ValueError(
+            f"Existing predictions do not match the evaluation set: {predictions_path}"
+        )
+    print(f"Resuming after {len(results)}/{len(evals)} prompt(s)")
+    return results
+
+
+async def async_generate_predictions(
+    evals: list[dict[str, str]],
+    generator: AsyncGenerator,
+    predictions_path: Path,
+    system_prompt: str | None = None,
+    max_in_flight: int = 16,
+) -> list[dict[str, Any]]:
+    """Generate concurrently while incrementally persisting results in order."""
+    if max_in_flight < 1:
+        raise ValueError("max_in_flight must be positive")
+
+    results = _existing_predictions(evals, predictions_path)
+    next_index = len(results)
+    pending: dict[asyncio.Task[tuple[int, dict[str, Any]]], int] = {}
+    completed: dict[int, dict[str, Any]] = {}
+
+    async def generate_one(index: int) -> tuple[int, dict[str, Any]]:
+        item = evals[index]
+        result: dict[str, Any] = {
+            "id": item["id"],
+            "domain": item["id"].split("-", 1)[0],
+            "prompt": item["prompt"],
+        }
+        result.update(await generator(item["prompt"], system_prompt))
+        if "error" in result:
+            print(f"[{index + 1}/{len(evals)}] {item['id']}: {result['error']}")
+        else:
+            print(f"[{index + 1}/{len(evals)}] {item['id']}")
+        return index, result
+
+    def schedule(index: int) -> None:
+        task = asyncio.create_task(generate_one(index))
+        pending[task] = index
+
+    for index in range(next_index, min(len(evals), next_index + max_in_flight)):
+        schedule(index)
+    scheduled = next_index + len(pending)
+
+    try:
+        with predictions_path.open(
+            "a" if results else "w", encoding="utf-8"
+        ) as output:
+            while pending:
+                done, _ = await asyncio.wait(
+                    pending, return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in done:
+                    pending.pop(task)
+                    index, result = task.result()
+                    completed[index] = result
+                    if scheduled < len(evals):
+                        schedule(scheduled)
+                        scheduled += 1
+                while next_index in completed:
+                    result = completed.pop(next_index)
+                    results.append(result)
+                    output.write(json.dumps(result, ensure_ascii=False) + "\n")
+                    output.flush()
+                    next_index += 1
+    finally:
+        tasks = list(pending)
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
     return results

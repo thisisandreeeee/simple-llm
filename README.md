@@ -139,6 +139,22 @@ uv run python experiments/06_qwen35_4b_sft_presence_penalty.py --adapter-run RUN
 uv run python experiments/07_qwen35_4b_sft_combined_penalties.py --adapter-run RUN
 ```
 
+Compare the legacy Modal generator with vLLM continuous batching by running
+Experiments 07 and 08 against the same adapter, GPU, and evaluation limit:
+
+```bash
+uv run python experiments/07_qwen35_4b_sft_combined_penalties.py --adapter-run RUN --limit N
+uv run python experiments/08_qwen35_4b_sft_vllm.py --adapter-run RUN --limit N
+```
+
+Compare the two run directories' `summary.json` and `rule_scores.json` for
+speed and quality, `config.json` for matching generation settings and runtime
+metadata, and samples from `predictions.jsonl` for response and token-count
+differences. vLLM is not the default Modal backend until the benchmark
+acceptance criteria pass. The Python 3.13 Modal image currently pins
+`vllm==0.17.0`; that pin remains unverified until the Task 5 smoke test loads
+the exact `Qwen/Qwen3.5-4B` model path.
+
 The 4B experiments use an L4 by default. Pass `--gpu A10` or `--gpu L40S` to
 compare hardware, or `--limit N` for a smaller run. Model weights are cached in
 the `simple-llm-huggingface-cache` Modal Volume.
@@ -176,7 +192,6 @@ failures are recorded immediately.
 
 Todo:
 
-- Serve inference with vLLM
 - Benchmark against SimpleEnglish skill
 - Publish the LoRA adapter, model card, training configuration, evaluation results, and base-model attribution to Hugging Face
 
