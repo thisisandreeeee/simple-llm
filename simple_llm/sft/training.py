@@ -17,7 +17,9 @@ REMOTE_EVAL_DATASET = "/workspace/sft_eval.jsonl"
 HF_CACHE_DIR = "/cache/huggingface"
 TRAINING_DIR = "/training"
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-PACKAGE_DIR = Path(__file__).resolve().parent
+# Mount the package root so serialized functions retain their
+# ``simple_llm.sft.training`` import path in Modal.
+PACKAGE_DIR = Path(__file__).resolve().parents[1]
 TRAIN_DATASET_PATH = DATA_DIR / "sft_train.jsonl"
 EVAL_DATASET_PATH = DATA_DIR / "sft_eval.jsonl"
 MODEL_NAME = "Qwen/Qwen3.5-4B"

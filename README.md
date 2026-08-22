@@ -174,11 +174,11 @@ Done:
 Todo:
 
 - Serve on vLLM to speed up inference
-- Run benchmarks (viol/100w, MMLU-Pro)
-- Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
+- Create DPO dataset
+- Implement DPO
 
 Later:
 
-- Create DPO dataset
-- Implement DPO
+- Run benchmarks (viol/100w, MMLU-Pro)
+- Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 - Implement RLAIF with GRPO
