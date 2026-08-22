@@ -1,6 +1,10 @@
 """Isolated Modal backend for continuously batched vLLM inference."""
 
 import inspect
+import json
+import os
+import shutil
+import tempfile
 import time
 import uuid
 from collections.abc import Iterator
@@ -22,14 +26,15 @@ from .modal import (
     validate_adapter_config,
 )
 from .vllm import (
+    _adapter_manifest,
     build_sampling_params,
     format_prompt,
     normalize_vllm_output,
-    prepare_scaled_adapter,
 )
 
 VLLM_CACHE_DIR = "/cache/vllm"
 CONCURRENCY = 16
+MERGED_MODEL_MARKER = ".simple-llm-merged-model.json"
 
 app = modal.App("simple-llm-vllm-inference")
 vllm_cache = modal.Volume.from_name("simple-llm-vllm-cache", create_if_missing=True)
@@ -37,7 +42,7 @@ image = (
     modal.Image.from_registry(
         "nvidia/cuda:12.9.0-devel-ubuntu22.04", add_python="3.13"
     )
-    .uv_pip_install("vllm==0.17.0", "huggingface-hub==0.36.0")
+    .uv_pip_install("vllm==0.17.0", "huggingface-hub==0.36.0", "peft==0.20.0")
     .env(
         {
             "HF_HOME": CACHE_DIR,
@@ -108,25 +113,28 @@ class VLLMModel:
         if self.adapter_run:
             adapter_path = Path(training_adapter_path(self.adapter_run))
             validate_adapter_config(adapter_path, self.model_name)
-            destination = Path(VLLM_CACHE_DIR) / "adapters" / self.adapter_run
-            scaled_path = prepare_scaled_adapter(
-                adapter_path, ADAPTER_SCALE, destination
-            )
-            self.lora_request = runtime.LoRARequest(
-                self.adapter_run, 1, str(scaled_path)
+            destination = Path(VLLM_CACHE_DIR) / "merged" / self.adapter_run
+            model_source = prepare_merged_model(
+                adapter_path,
+                self.model_name,
+                ADAPTER_SCALE,
+                destination,
             )
             adapter_metadata = {
                 "run": self.adapter_run,
-                "path": str(scaled_path),
+                "path": str(model_source),
                 "scale": ADAPTER_SCALE,
                 "validated": True,
-                "merged": False,
+                "merged": True,
             }
+        else:
+            model_source = self.model_name
 
         engine_args = runtime.AsyncEngineArgs(
-            model=self.model_name,
+            model=str(model_source),
             seed=self.seed,
-            enable_lora=self.lora_request is not None,
+            enable_lora=False,
+            language_model_only=True,
         )
         self.engine = runtime.AsyncLLM.from_engine_args(engine_args)
         self.metadata = {
@@ -201,6 +209,95 @@ def _eos_token_ids(eos_token_id: int | list[int] | None) -> list[int]:
     if eos_token_id is None:
         return []
     return [eos_token_id] if isinstance(eos_token_id, int) else list(eos_token_id)
+
+
+def prepare_merged_model(
+    adapter_path: Path, model_name: str, scale: float, destination: Path
+) -> Path:
+    """Materialize the scaled PEFT adapter into a vLLM-loadable model."""
+    import gc
+
+    import torch
+    from transformers import AutoTokenizer, Qwen3_5ForConditionalGeneration
+
+    from .modal import load_peft_adapter, scale_peft_adapter
+
+    source_manifest = _adapter_manifest(adapter_path)
+    if _valid_merged_model(destination, model_name, scale, source_manifest):
+        return destination
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    stage = Path(
+        tempfile.mkdtemp(prefix=f".{destination.name}.stage-", dir=destination.parent)
+    )
+    model = None
+    try:
+        model = Qwen3_5ForConditionalGeneration.from_pretrained(
+            model_name, torch_dtype="auto"
+        ).to("cuda")
+        model = load_peft_adapter(model, adapter_path)
+        scale_peft_adapter(model, scale)
+        model = model.merge_and_unload(safe_merge=True)
+        model.eval()
+        model.save_pretrained(stage, safe_serialization=True)
+        AutoTokenizer.from_pretrained(model_name).save_pretrained(stage)
+        (stage / MERGED_MODEL_MARKER).write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "model_name": model_name,
+                    "scale": scale,
+                    "source_manifest": source_manifest,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        if destination.exists():
+            backup = destination.with_name(
+                f".{destination.name}.stale-{uuid.uuid4().hex}"
+            )
+            os.replace(destination, backup)
+        else:
+            backup = None
+        try:
+            os.replace(stage, destination)
+        except Exception:
+            if backup is not None and not destination.exists():
+                os.replace(backup, destination)
+                backup = None
+            raise
+        if backup is not None:
+            shutil.rmtree(backup)
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage)
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
+    return destination
+
+
+def _valid_merged_model(
+    destination: Path,
+    model_name: str,
+    scale: float,
+    source_manifest: dict[str, str],
+) -> bool:
+    try:
+        marker = json.loads(
+            (destination / MERGED_MODEL_MARKER).read_text(encoding="utf-8")
+        )
+        return (
+            marker.get("version") == 1
+            and marker.get("model_name") == model_name
+            and marker.get("scale") == scale
+            and marker.get("source_manifest") == source_manifest
+            and (destination / "config.json").is_file()
+        )
+    except (json.JSONDecodeError, OSError, TypeError):
+        return False
 
 
 @contextmanager

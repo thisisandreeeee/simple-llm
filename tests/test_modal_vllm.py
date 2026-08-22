@@ -1,4 +1,5 @@
 import asyncio
+import json
 import sys
 import types
 from contextlib import contextmanager
@@ -148,6 +149,7 @@ def test_lifecycle_generates_with_unique_request_ids_and_cleans_up(monkeypatch) 
         "model": "model/name",
         "seed": 42,
         "enable_lora": False,
+        "language_model_only": True,
     }
     assert len(engine.calls) == 2
     warmup, request = engine.calls
@@ -199,55 +201,118 @@ def test_cleanup_falls_back_to_background_loop_shutdown() -> None:
     assert model.engine is None
 
 
-def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> None:
+def test_adapter_is_merged_before_vllm_load(monkeypatch, tmp_path) -> None:
     engine = FakeEngine()
     runtime = fake_runtime(engine)
-    scaled_path = tmp_path / "scaled"
-    prepare_calls = []
+    merged_path = tmp_path / "merged"
+    merge_calls = []
 
-    def prepare(source, scale, destination):
-        prepare_calls.append((source, scale, destination))
-        return scaled_path
+    def merge(source, model_name, scale, destination):
+        merge_calls.append((source, model_name, scale, destination))
+        return merged_path
 
     monkeypatch.setattr(modal_vllm, "_runtime", lambda: runtime)
     monkeypatch.setattr(modal_vllm, "VLLM_CACHE_DIR", str(tmp_path / "cache"))
-    destination = tmp_path / "cache" / "adapters" / "run"
-    destination.mkdir(parents=True)
-    (destination / "adapter_config.json").write_text(
-        '{"lora_alpha": 16}', encoding="utf-8"
-    )
     monkeypatch.setattr(
         modal_vllm, "training_adapter_path", lambda run: "/training/run/adapter"
     )
     monkeypatch.setattr(modal_vllm, "validate_adapter_config", lambda path, model: {})
-    monkeypatch.setattr(
-        modal_vllm,
-        "prepare_scaled_adapter",
-        prepare,
-    )
+    monkeypatch.setattr(modal_vllm, "prepare_merged_model", merge, raising=False)
     model = new_model(adapter_run="run")
 
     asyncio.run(model.load())
     asyncio.run(model.generate("question"))
 
-    assert runtime.AsyncLLM.engine_args.kwargs["enable_lora"] is True
+    assert runtime.AsyncLLM.engine_args.kwargs == {
+        "model": str(merged_path),
+        "seed": 42,
+        "enable_lora": False,
+        "language_model_only": True,
+    }
     request = engine.calls[-1]
-    lora = request[3]["lora_request"]
-    assert (lora.name, lora.request_id, lora.path) == ("run", 1, str(scaled_path))
-    assert prepare_calls == [
+    assert request[3] == {}
+    assert merge_calls == [
         (
             Path("/training/run/adapter"),
+            "model/name",
             0.25,
-            destination,
+            Path(tmp_path / "cache") / "merged" / "run",
         )
     ]
     assert model.metadata["adapter"] == {
         "run": "run",
-        "path": str(scaled_path),
+        "path": str(merged_path),
         "scale": 0.25,
         "validated": True,
-        "merged": False,
+        "merged": True,
     }
+
+
+def test_prepare_merged_model_scales_and_reuses_cached_artifact(monkeypatch, tmp_path) -> None:
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    (adapter / "adapter_config.json").write_text(
+        json.dumps({"lora_alpha": 16}), encoding="utf-8"
+    )
+    (adapter / "adapter_model.safetensors").write_bytes(b"weights")
+    destination = tmp_path / "merged" / "run"
+    calls = []
+
+    class FakeMergedModel:
+        def to(self, device):
+            assert device == "cuda"
+            return self
+
+        def eval(self):
+            return self
+
+        def merge_and_unload(self, safe_merge):
+            assert safe_merge is True
+            calls.append("merge")
+            return self
+
+        def save_pretrained(self, path, safe_serialization):
+            assert safe_serialization is True
+            Path(path, "config.json").write_text("{}", encoding="utf-8")
+
+    class FakeModelClass:
+        @classmethod
+        def from_pretrained(cls, model_name, torch_dtype):
+            assert (model_name, torch_dtype) == ("model/name", "auto")
+            calls.append("load")
+            return FakeMergedModel()
+
+    class FakeTokenizerSaver:
+        @classmethod
+        def from_pretrained(cls, model_name):
+            assert model_name == "model/name"
+            return cls()
+
+        def save_pretrained(self, path):
+            Path(path, "tokenizer.json").write_text("{}", encoding="utf-8")
+
+    torch = types.ModuleType("torch")
+    torch.cuda = types.SimpleNamespace(empty_cache=lambda: calls.append("empty"))
+    transformers = types.ModuleType("transformers")
+    transformers.AutoTokenizer = FakeTokenizerSaver
+    transformers.Qwen3_5ForConditionalGeneration = FakeModelClass
+    monkeypatch.setitem(sys.modules, "torch", torch)
+    monkeypatch.setitem(sys.modules, "transformers", transformers)
+
+    import simple_llm.inference.modal as legacy_modal
+
+    monkeypatch.setattr(legacy_modal, "load_peft_adapter", lambda model, path: calls.append("adapter") or model)
+    monkeypatch.setattr(legacy_modal, "scale_peft_adapter", lambda model, scale: calls.append(scale) or 7)
+
+    assert modal_vllm.prepare_merged_model(adapter, "model/name", 0.25, destination) == destination
+    assert calls == ["load", "adapter", 0.25, "merge", "empty"]
+    assert (destination / modal_vllm.MERGED_MODEL_MARKER).is_file()
+
+    def fail_if_loaded(*args, **kwargs):
+        raise AssertionError("cached merged model should be reused")
+
+    monkeypatch.setattr(FakeModelClass, "from_pretrained", classmethod(fail_if_loaded))
+    assert modal_vllm.prepare_merged_model(adapter, "model/name", 0.25, destination) == destination
 
 
 def test_engine_exception_is_returned_as_a_request_error(monkeypatch) -> None:
