@@ -29,11 +29,11 @@ Runs 03, 04, and 05 use:
 
 The important differences are:
 
-| Run | Condition | Decoding |
-| --- | --- | --- |
-| 03 | Base model, no system prompt | Greedy |
-| 04 | Base model with Simple English system prompt | Greedy |
-| 05 | Rank-16 LoRA adapter merged at scale 0.25 | Temperature 0.7, top-p 0.8, top-k 20 |
+| Run | Condition                                    | Decoding                             |
+| --- | -------------------------------------------- | ------------------------------------ |
+| 03  | Base model, no system prompt                 | Greedy                               |
+| 04  | Base model with Simple English system prompt | Greedy                               |
+| 05  | Rank-16 LoRA adapter merged at scale 0.25    | Temperature 0.7, top-p 0.8, top-k 20 |
 
 Run 05 uses pinned model revision `851bf6e...`. Runs 03 and 04 do not record a revision, so exact base-weight equality cannot be verified. Run 05 also uses 901 training examples and 99 held-out training-evaluation examples. No benchmark prompt exactly matches either SFT split.
 
@@ -58,14 +58,14 @@ Each answer received one deterministic pass from `deepseek-v4-pro`. Confidence i
 
 ### Efficiency
 
-| Measure | Run 03: base | Run 04: prompted | Run 05: SFT | SFT vs. base |
-| --- | ---: | ---: | ---: | ---: |
-| Truncated responses | 2 | 0 | 2 | No change |
-| Mean input tokens | 37.7 | 541.7 | 37.6 on visible rows | No material change |
-| Mean output tokens | 1,245.8 | 279.0 | 679.2 | -45.5% |
-| Median output tokens | 1,273.5 | 271.0 | 613 on visible rows | -51.9% |
-| Mean generation time | 61.91 s | 13.47 s | 35.71 s | -42.3% |
-| Wall time | 6,221.42 s | 1,394.37 s | 3,601.61 s | -42.1% |
+| Measure              | Run 03: base | Run 04: prompted |          Run 05: SFT |       SFT vs. base |
+| -------------------- | -----------: | ---------------: | -------------------: | -----------------: |
+| Truncated responses  |            2 |                0 |                    2 |          No change |
+| Mean input tokens    |         37.7 |            541.7 | 37.6 on visible rows | No material change |
+| Mean output tokens   |      1,245.8 |            279.0 |                679.2 |             -45.5% |
+| Median output tokens |      1,273.5 |            271.0 |  613 on visible rows |             -51.9% |
+| Mean generation time |      61.91 s |          13.47 s |              35.71 s |             -42.3% |
+| Wall time            |   6,221.42 s |       1,394.37 s |           3,601.61 s |             -42.1% |
 
 SFT learned substantial concision without Run 04's 504-token system-prompt overhead. It found a middle point between the long base answers and the aggressive brevity of the prompted answers.
 
@@ -75,15 +75,15 @@ The result is still uneven. Among the 99 visible Run 05 answers, 18 use at least
 
 For sentence length and long-sentence fraction, lower is better. For the other metrics, higher is better.
 
-| Rule metric | Run 03: base | Run 04: prompted | Run 05: SFT | SFT vs. base |
-| --- | ---: | ---: | ---: | ---: |
-| Average sentence length | 17.93 | 11.15 | 15.37 | -2.56 words |
-| Long-sentence fraction | 25.44% | 4.22% | 15.76% | -9.68 pp |
-| Sentence mechanics | 88.05% | 99.79% | 91.54% | +3.49 pp |
-| Verb forms and modals | 84.81% | 96.03% | 89.11% | +4.29 pp |
-| Controlled vocabulary | 51.97% | 55.88% | 54.03% | +2.05 pp |
-| Terminology consistency | 70.41% | 73.50% | 84.69% | +14.29 pp |
-| Document limits | 99.88% | 89.45% | 100.00% | +0.12 pp |
+| Rule metric             | Run 03: base | Run 04: prompted | Run 05: SFT | SFT vs. base |
+| ----------------------- | -----------: | ---------------: | ----------: | -----------: |
+| Average sentence length |        17.93 |            11.15 |       15.37 |  -2.56 words |
+| Long-sentence fraction  |       25.44% |            4.22% |      15.76% |     -9.68 pp |
+| Sentence mechanics      |       88.05% |           99.79% |      91.54% |     +3.49 pp |
+| Verb forms and modals   |       84.81% |           96.03% |      89.11% |     +4.29 pp |
+| Controlled vocabulary   |       51.97% |           55.88% |      54.03% |     +2.05 pp |
+| Terminology consistency |       70.41% |           73.50% |      84.69% |    +14.29 pp |
+| Document limits         |       99.88% |           89.45% |     100.00% |     +0.12 pp |
 
 SFT improved sentence length and most rule metrics, but less strongly than the system prompt. In return, it avoided Run 04's document-limit failure, where many short sentences formed long, fragmented paragraphs.
 
@@ -91,21 +91,21 @@ The terminology gain is concentrated: 75 of 96 paired answers tie, 18 improve, a
 
 ### Judge-assessed quality
 
-| Judge dimension | Run 03: base | Run 04: prompted | Run 05: SFT | SFT vs. base |
-| --- | ---: | ---: | ---: | ---: |
-| Clarity and coherence | 92.09% | 85.25% | 90.63% | -1.47 pp |
-| Semantic simplicity | 65.82% | 74.75% | 79.21% | +13.39 pp |
-| Task fulfillment | 97.96% | 87.75% | 95.57% | -2.39 pp |
-| Technical adequacy | 68.30% | 59.18% | 71.88% | +3.58 pp |
+| Judge dimension       | Run 03: base | Run 04: prompted | Run 05: SFT | SFT vs. base |
+| --------------------- | -----------: | ---------------: | ----------: | -----------: |
+| Clarity and coherence |       92.09% |           85.25% |      90.63% |     -1.47 pp |
+| Semantic simplicity   |       65.82% |           74.75% |      79.21% |    +13.39 pp |
+| Task fulfillment      |       97.96% |           87.75% |      95.57% |     -2.39 pp |
+| Technical adequacy    |       68.30% |           59.18% |      71.88% |     +3.58 pp |
 
 Aggregate denominators differ because of missing and invalid scores. Paired results are more reliable:
 
-| Dimension | Paired change, SFT - base | Approximate 95% CI | Improved / tied / declined |
-| --- | ---: | ---: | ---: |
-| Clarity and coherence | -1.60 pp | -5.29 to +2.10 pp | 15 / 59 / 20 |
-| Semantic simplicity | +13.98 pp | +8.98 to +18.97 pp | 48 / 36 / 9 |
-| Task fulfillment | -1.86 pp | -4.23 to +0.51 pp | 5 / 79 / 10 |
-| Technical adequacy | +4.57 pp | +0.02 to +9.12 pp | 34 / 37 / 22 |
+| Dimension             | Paired change, SFT - base | Approximate 95% CI | Improved / tied / declined |
+| --------------------- | ------------------------: | -----------------: | -------------------------: |
+| Clarity and coherence |                  -1.60 pp |  -5.29 to +2.10 pp |               15 / 59 / 20 |
+| Semantic simplicity   |                 +13.98 pp | +8.98 to +18.97 pp |                48 / 36 / 9 |
+| Task fulfillment      |                  -1.86 pp |  -4.23 to +0.51 pp |                5 / 79 / 10 |
+| Technical adequacy    |                  +4.57 pp |  +0.02 to +9.12 pp |               34 / 37 / 22 |
 
 The strongest result is semantic simplicity. Its confidence interval is well above zero, and more than five times as many answers improve as decline.
 
