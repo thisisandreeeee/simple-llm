@@ -4,13 +4,13 @@ import asyncio
 import pytest
 from pydantic import ValidationError
 
-from simple_llm.sft_prompts import (
+from simple_llm.sft.prompts import (
     PromptRecord,
     SFTExample,
     allocate_counts,
     build_strata,
 )
-from simple_llm import sft_prompts
+from simple_llm.sft import prompts as sft_prompts
 
 
 def test_strata_are_reproducible_and_match_3000_quotas() -> None:

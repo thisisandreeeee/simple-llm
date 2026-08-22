@@ -9,11 +9,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .llm_runtime import create_deepseek_model, run_concurrently
-from .sft_prompts import PromptRecord
+from .prompts import PromptRecord
+from .runtime import create_deepseek_model, run_concurrently
 
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_PROMPTS = DATA_DIR / "sft_prompts.jsonl"
 DEFAULT_OUTPUT = DATA_DIR / "sft_answers.jsonl"
 SIMPLE_ENGLISH_PROMPT = (DATA_DIR / "simple_english.md").read_text(encoding="utf-8")

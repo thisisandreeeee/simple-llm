@@ -5,13 +5,13 @@ import pytest
 import torch
 from transformers import RepetitionPenaltyLogitsProcessor
 
-from simple_llm.experiment import summarize_inference
+from simple_llm.experiment_runner import summarize_inference
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
     generate,
     generate_predictions,
 )
-from simple_llm.rule_scoring import score_predictions
+from simple_llm.scoring.rule_scoring import score_predictions
 
 
 def test_generate_stops_on_model_and_chat_eos_tokens() -> None:

@@ -14,7 +14,7 @@ from statistics import mean
 from typing import Any
 
 from simple_llm.inference import GENERATION, generate_predictions, local_generator
-from simple_llm.rule_scoring import score_predictions
+from simple_llm.scoring.rule_scoring import score_predictions
 
 ROOT = Path(__file__).resolve().parents[1]
 EVALS = ROOT / "data/evals.jsonl"
@@ -183,7 +183,7 @@ def run_experiment(
 
     random.seed(SEED)
     if args.backend == "modal":
-        from simple_llm.modal_inference import modal_generator
+        from simple_llm.inference.modal import modal_generator
 
         generator_context = modal_generator(
             model,

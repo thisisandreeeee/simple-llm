@@ -4,8 +4,8 @@ import json
 import pytest
 from pydantic import ValidationError
 
-import simple_llm.sft_answers as sft_answers
-from simple_llm.sft_answers import (
+import simple_llm.sft.answers as sft_answers
+from simple_llm.sft.answers import (
     AnswerRecord,
     CORRECTNESS_PROMPT,
     GeneratedAnswer,
@@ -17,7 +17,7 @@ from simple_llm.sft_answers import (
     load_answer_records,
     load_prompts,
 )
-from simple_llm.sft_prompts import PromptRecord
+from simple_llm.sft.prompts import PromptRecord
 
 
 def test_answer_record_contains_only_the_final_target() -> None:
