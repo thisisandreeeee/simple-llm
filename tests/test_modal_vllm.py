@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -107,6 +108,7 @@ def test_lifecycle_generates_with_unique_request_ids_and_cleans_up(monkeypatch) 
     assert len(engine.calls) == 2
     warmup, request = engine.calls
     assert warmup[2] != request[2]
+    assert warmup[1].kwargs["max_tokens"] == 1
     assert request[0] == "formatted:question"
     assert request[1].kwargs == {
         "temperature": 0.7,
@@ -139,6 +141,12 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
     engine = FakeEngine()
     runtime = fake_runtime(engine)
     scaled_path = tmp_path / "scaled"
+    prepare_calls = []
+
+    def prepare(source, scale, destination):
+        prepare_calls.append((source, scale, destination))
+        return scaled_path
+
     monkeypatch.setattr(modal_vllm, "_runtime", lambda: runtime)
     monkeypatch.setattr(modal_vllm, "VLLM_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setattr(
@@ -148,7 +156,7 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
     monkeypatch.setattr(
         modal_vllm,
         "prepare_scaled_adapter",
-        lambda source, scale, destination: scaled_path,
+        prepare,
     )
     model = new_model(adapter_run="run")
 
@@ -159,6 +167,13 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
     request = engine.calls[-1]
     lora = request[3]["lora_request"]
     assert (lora.name, lora.request_id, lora.path) == ("run", 1, str(scaled_path))
+    assert prepare_calls == [
+        (
+            Path("/training/run/adapter"),
+            0.25,
+            tmp_path / "cache" / "adapters" / "run",
+        )
+    ]
     assert model.metadata["adapter"] == {
         "run": "run",
         "path": str(scaled_path),
@@ -234,3 +249,16 @@ def test_generator_exposes_async_remote_callable_and_metadata(monkeypatch) -> No
             "repetition_penalty": "0.0",
         },
     ]
+
+
+def test_generator_validates_adapter_before_starting_app(monkeypatch) -> None:
+    def unexpected_run():
+        raise AssertionError("app.run must not be called")
+
+    monkeypatch.setattr(modal_vllm.app, "run", unexpected_run)
+
+    with pytest.raises(ValueError, match="Adapter run"):
+        with modal_vllm.modal_vllm_generator(
+            "model/name", "L4", 42, adapter_run="../unsafe"
+        ):
+            pass

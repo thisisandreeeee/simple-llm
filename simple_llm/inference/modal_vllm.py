@@ -144,7 +144,7 @@ class VLLMModel:
             self.metadata["adapter"] = adapter_metadata
 
         warmup_started = time.perf_counter()
-        await self._generate("Warm up")
+        await self._generate("Warm up", runtime.SamplingParams(max_tokens=1))
         self.metadata["warmup_seconds"] = time.perf_counter() - warmup_started
 
     @modal.method()
@@ -155,9 +155,11 @@ class VLLMModel:
     async def generate(
         self, prompt: str, system_prompt: str | None = None
     ) -> dict[str, Any]:
-        return await self._generate(format_prompt(self.tokenizer, prompt, system_prompt))
+        return await self._generate(
+            format_prompt(self.tokenizer, prompt, system_prompt), self.sampling_params
+        )
 
-    async def _generate(self, prompt_text: str) -> dict[str, Any]:
+    async def _generate(self, prompt_text: str, sampling_params: Any) -> dict[str, Any]:
         request_id = uuid.uuid4().hex
         try:
             input_id = modal.current_input_id()
@@ -170,7 +172,7 @@ class VLLMModel:
         started = time.perf_counter()
         completed = None
         async for output in self.engine.generate(
-            prompt_text, self.sampling_params, request_id, **kwargs
+            prompt_text, sampling_params, request_id, **kwargs
         ):
             if output.finished:
                 completed = output
