@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from simple_llm import judge_scoring
+from simple_llm.scoring import judge_scoring
 
 
 class FakeMetric:

@@ -48,7 +48,7 @@ set +a
 Judge a completed run with up to 50 concurrent requests:
 
 ```bash
-uv run python -m simple_llm.judge_scoring \
+uv run python -m simple_llm.scoring.judge_scoring \
   runs/RUN/predictions.jsonl runs/RUN/rule_scores.json \
   --model "$DEEPSEEK_MODEL_NAME" --concurrency 50 --retry-limit 2
 ```
@@ -174,11 +174,11 @@ Done:
 Todo:
 
 - Serve on vLLM to speed up inference
-- Create DPO dataset
-- Implement DPO
+- Run benchmarks (viol/100w, MMLU-Pro)
+- Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
 
 Later:
 
-- Run benchmarks (viol/100w, MMLU-Pro)
-- Upload to huggingface: LoRA adapter, model card, training configuration, evaluation results, base-model attribution
+- Create DPO dataset
+- Implement DPO
 - Implement RLAIF with GRPO

@@ -11,7 +11,7 @@ from simple_llm.inference import (
     generate,
     generate_predictions,
 )
-from simple_llm.rule_scoring import score_predictions
+from simple_llm.scoring.rule_scoring import score_predictions
 
 
 def test_generate_stops_on_model_and_chat_eos_tokens() -> None:
