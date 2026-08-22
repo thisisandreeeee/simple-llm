@@ -41,7 +41,7 @@ class FakeLoRARequest:
 class FakeEngine:
     def __init__(self):
         self.calls = []
-        self.shutdown = False
+        self.shutdown_called = False
 
     async def generate(self, prompt, params, request_id, **kwargs):
         self.calls.append((prompt, params, request_id, kwargs))
@@ -52,8 +52,8 @@ class FakeEngine:
             finished=True,
         )
 
-    def shutdown_background_loop(self):
-        self.shutdown = True
+    async def shutdown(self):
+        self.shutdown_called = True
 
 
 def fake_runtime(engine):
@@ -71,7 +71,7 @@ def fake_runtime(engine):
         SamplingParams=FakeParams,
         LoRARequest=FakeLoRARequest,
         AutoTokenizer=FakeTokenizer,
-        vllm_version="0.13.0",
+        vllm_version="0.17.0",
         gpu_name="Fake GPU",
         gpu_memory_gib=24.0,
     )
@@ -126,14 +126,32 @@ def test_lifecycle_generates_with_unique_request_ids_and_cleans_up(monkeypatch) 
     assert result["input_tokens"] == 2
     assert result["output_tokens"] == 2
     assert result["truncated"] is False
-    assert model.metadata["vllm_version"] == "0.13.0"
+    assert model.metadata["vllm_version"] == "0.17.0"
     assert model.metadata["gpu_actual"] == "Fake GPU"
     assert model.metadata["model_revision"] == "revision-1"
     assert model.metadata["concurrency"] == 16
 
     asyncio.run(model.cleanup())
 
-    assert engine.shutdown is True
+    assert engine.shutdown_called is True
+    assert model.engine is None
+
+
+def test_cleanup_falls_back_to_background_loop_shutdown() -> None:
+    class LegacyEngine:
+        def __init__(self):
+            self.shutdown_called = False
+
+        def shutdown_background_loop(self):
+            self.shutdown_called = True
+
+    engine = LegacyEngine()
+    model = new_model()
+    model.engine = engine
+
+    asyncio.run(model.cleanup())
+
+    assert engine.shutdown_called is True
     assert model.engine is None
 
 
@@ -149,6 +167,11 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
 
     monkeypatch.setattr(modal_vllm, "_runtime", lambda: runtime)
     monkeypatch.setattr(modal_vllm, "VLLM_CACHE_DIR", str(tmp_path / "cache"))
+    destination = tmp_path / "cache" / "adapters" / "run"
+    destination.mkdir(parents=True)
+    (destination / "adapter_config.json").write_text(
+        '{"lora_alpha": 16}', encoding="utf-8"
+    )
     monkeypatch.setattr(
         modal_vllm, "training_adapter_path", lambda run: "/training/run/adapter"
     )
@@ -171,7 +194,7 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
         (
             Path("/training/run/adapter"),
             0.25,
-            tmp_path / "cache" / "adapters" / "run",
+            destination,
         )
     ]
     assert model.metadata["adapter"] == {
@@ -183,7 +206,7 @@ def test_adapter_is_scaled_and_sent_as_lora_request(monkeypatch, tmp_path) -> No
     }
 
 
-def test_engine_exception_is_surfaced_for_the_request(monkeypatch) -> None:
+def test_engine_exception_is_returned_as_a_request_error(monkeypatch) -> None:
     class FailingAfterWarmupEngine(FakeEngine):
         async def generate(self, prompt, params, request_id, **kwargs):
             if self.calls:
@@ -196,8 +219,9 @@ def test_engine_exception_is_surfaced_for_the_request(monkeypatch) -> None:
     model = new_model()
     asyncio.run(model.load())
 
-    with pytest.raises(RuntimeError, match="engine failed"):
-        asyncio.run(model.generate("question"))
+    result = asyncio.run(model.generate("question"))
+
+    assert result == {"error": "RuntimeError: engine failed"}
 
 
 def test_generator_exposes_async_remote_callable_and_metadata(monkeypatch) -> None:
@@ -212,7 +236,7 @@ def test_generator_exposes_async_remote_callable_and_metadata(monkeypatch) -> No
         return {"response": prompt}
 
     remote = SimpleNamespace(
-        generate=SimpleNamespace(aio=generate),
+        generate=SimpleNamespace(remote=SimpleNamespace(aio=generate)),
         info=SimpleNamespace(remote=lambda: {"backend": "vllm"}),
     )
 

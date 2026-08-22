@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from simple_llm.inference import vllm as vllm_helpers
 from simple_llm.inference.vllm import (
     build_sampling_params,
     format_prompt,
@@ -84,6 +85,56 @@ def test_prepare_scaled_adapter_copies_weights_and_scales_only_copy(tmp_path) ->
     assert json.loads((adapter / "adapter_config.json").read_text(encoding="utf-8")) == config
     assert json.loads((destination / "adapter_config.json").read_text(encoding="utf-8"))["lora_alpha"] == 4
     assert (destination / "adapter_model.safetensors").read_bytes() == b"weights"
+
+    assert prepare_scaled_adapter(adapter, 0.25, destination) == destination
+
+
+def test_prepare_scaled_adapter_replaces_stale_destination(tmp_path) -> None:
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    (adapter / "adapter_config.json").write_text(
+        json.dumps({"lora_alpha": 16}), encoding="utf-8"
+    )
+    (adapter / "adapter_model.safetensors").write_bytes(b"weights")
+    destination = tmp_path / "scaled"
+    prepare_scaled_adapter(adapter, 0.25, destination)
+    (destination / "adapter_config.json").write_text(
+        json.dumps({"lora_alpha": 16}), encoding="utf-8"
+    )
+    (destination / "stale").write_text("incomplete", encoding="utf-8")
+
+    assert prepare_scaled_adapter(adapter, 0.25, destination) == destination
+
+    assert json.loads((destination / "adapter_config.json").read_text())["lora_alpha"] == 4
+    assert not (destination / "stale").exists()
+
+
+def test_prepare_scaled_adapter_stages_before_replacing_destination(
+    monkeypatch, tmp_path
+) -> None:
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    (adapter / "adapter_config.json").write_text(
+        json.dumps({"lora_alpha": 16}), encoding="utf-8"
+    )
+    (adapter / "adapter_model.safetensors").write_bytes(b"weights")
+    destination = tmp_path / "scaled"
+    copytree = vllm_helpers.shutil.copytree
+
+    def interrupted_copy(source, target, *args, **kwargs):
+        copytree(source, target, *args, **kwargs)
+        raise RuntimeError("interrupted")
+
+    monkeypatch.setattr(vllm_helpers.shutil, "copytree", interrupted_copy)
+
+    with pytest.raises(RuntimeError, match="interrupted"):
+        prepare_scaled_adapter(adapter, 0.25, destination)
+
+    assert not destination.exists()
+    assert list(tmp_path.glob(".scaled.stage-*")) == []
+    monkeypatch.setattr(vllm_helpers.shutil, "copytree", copytree)
+    assert prepare_scaled_adapter(adapter, 0.25, destination) == destination
+    assert json.loads((destination / "adapter_config.json").read_text())["lora_alpha"] == 4
 
 
 @pytest.mark.parametrize(

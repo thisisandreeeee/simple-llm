@@ -37,7 +37,7 @@ image = (
     modal.Image.from_registry(
         "nvidia/cuda:12.9.0-devel-ubuntu22.04", add_python="3.13"
     )
-    .uv_pip_install("vllm==0.13.0", "huggingface-hub==0.36.0")
+    .uv_pip_install("vllm==0.17.0", "huggingface-hub==0.36.0")
     .env(
         {
             "HF_HOME": CACHE_DIR,
@@ -107,11 +107,8 @@ class VLLMModel:
             adapter_path = Path(training_adapter_path(self.adapter_run))
             validate_adapter_config(adapter_path, self.model_name)
             destination = Path(VLLM_CACHE_DIR) / "adapters" / self.adapter_run
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            scaled_path = (
-                destination
-                if destination.exists()
-                else prepare_scaled_adapter(adapter_path, ADAPTER_SCALE, destination)
+            scaled_path = prepare_scaled_adapter(
+                adapter_path, ADAPTER_SCALE, destination
             )
             self.lora_request = runtime.LoRARequest(
                 self.adapter_run, 1, str(scaled_path)
@@ -155,9 +152,13 @@ class VLLMModel:
     async def generate(
         self, prompt: str, system_prompt: str | None = None
     ) -> dict[str, Any]:
-        return await self._generate(
-            format_prompt(self.tokenizer, prompt, system_prompt), self.sampling_params
-        )
+        try:
+            return await self._generate(
+                format_prompt(self.tokenizer, prompt, system_prompt),
+                self.sampling_params,
+            )
+        except Exception as exc:
+            return {"error": f"{type(exc).__name__}: {exc}"}
 
     async def _generate(self, prompt_text: str, sampling_params: Any) -> dict[str, Any]:
         request_id = uuid.uuid4().hex
@@ -185,7 +186,9 @@ class VLLMModel:
     async def cleanup(self) -> None:
         engine = getattr(self, "engine", None)
         self.engine = None
-        shutdown = getattr(engine, "shutdown_background_loop", None)
+        shutdown = getattr(engine, "shutdown", None)
+        if not callable(shutdown):
+            shutdown = getattr(engine, "shutdown_background_loop", None)
         if callable(shutdown):
             result = shutdown()
             if inspect.isawaitable(result):
@@ -219,4 +222,4 @@ def modal_vllm_generator(
             repetition_penalty=str(repetition_penalty or 0.0),
         )
         metadata = {"gpu_requested": gpu, **remote.info.remote()}
-        yield remote.generate.aio, metadata
+        yield remote.generate.remote.aio, metadata

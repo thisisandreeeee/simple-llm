@@ -236,12 +236,11 @@ async def async_generate_predictions(
             "domain": item["id"].split("-", 1)[0],
             "prompt": item["prompt"],
         }
-        try:
-            result.update(await generator(item["prompt"], system_prompt))
-            print(f"[{index + 1}/{len(evals)}] {item['id']}")
-        except Exception as exc:  # Keep completed results if one prompt fails.
-            result["error"] = f"{type(exc).__name__}: {exc}"
+        result.update(await generator(item["prompt"], system_prompt))
+        if "error" in result:
             print(f"[{index + 1}/{len(evals)}] {item['id']}: {result['error']}")
+        else:
+            print(f"[{index + 1}/{len(evals)}] {item['id']}")
         return index, result
 
     def schedule(index: int) -> None:
@@ -252,20 +251,31 @@ async def async_generate_predictions(
         schedule(index)
     scheduled = next_index + len(pending)
 
-    with predictions_path.open("a" if results else "w", encoding="utf-8") as output:
-        while pending:
-            done, _ = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
-            for task in done:
-                pending.pop(task)
-                index, result = task.result()
-                completed[index] = result
-                if scheduled < len(evals):
-                    schedule(scheduled)
-                    scheduled += 1
-            while next_index in completed:
-                result = completed.pop(next_index)
-                results.append(result)
-                output.write(json.dumps(result, ensure_ascii=False) + "\n")
-                output.flush()
-                next_index += 1
+    try:
+        with predictions_path.open(
+            "a" if results else "w", encoding="utf-8"
+        ) as output:
+            while pending:
+                done, _ = await asyncio.wait(
+                    pending, return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in done:
+                    pending.pop(task)
+                    index, result = task.result()
+                    completed[index] = result
+                    if scheduled < len(evals):
+                        schedule(scheduled)
+                        scheduled += 1
+                while next_index in completed:
+                    result = completed.pop(next_index)
+                    results.append(result)
+                    output.write(json.dumps(result, ensure_ascii=False) + "\n")
+                    output.flush()
+                    next_index += 1
+    finally:
+        tasks = list(pending)
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
     return results

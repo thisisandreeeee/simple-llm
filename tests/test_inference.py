@@ -177,6 +177,26 @@ def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
     assert scores["results"][1]["error"] == "RuntimeError: expected"
 
 
+def test_summarize_inference_reports_generation_and_wall_throughput() -> None:
+    results = [
+        {
+            "output_tokens": 12,
+            "generation_seconds": 3.0,
+            "truncated": False,
+        },
+        {
+            "output_tokens": 8,
+            "generation_seconds": 1.0,
+            "truncated": False,
+        },
+    ]
+
+    summary = experiment_runner.summarize_inference(results, wall_seconds=2.0)
+
+    assert summary["output_tokens_per_second"] == 5.0
+    assert summary["wall_output_tokens_per_second"] == 10.0
+
+
 def test_generate_predictions_resumes_existing_prefix(tmp_path) -> None:
     evals = [
         {"id": "ONE-01", "prompt": "first"},
@@ -231,10 +251,10 @@ def test_async_generate_predictions_flushes_in_evaluation_order(tmp_path) -> Non
     assert [row["id"] for row in rows] == ["A", "B"]
 
 
-def test_async_generate_predictions_records_one_failure_and_continues(tmp_path) -> None:
+def test_async_generate_predictions_persists_request_error_and_continues(tmp_path) -> None:
     async def generator(prompt: str, system_prompt: str | None):
         if prompt == "bad":
-            raise RuntimeError("expected")
+            return {"error": "RuntimeError: expected"}
         return {"response": "ok"}
 
     results = asyncio.run(
@@ -247,6 +267,54 @@ def test_async_generate_predictions_records_one_failure_and_continues(tmp_path) 
 
     assert results[0]["error"] == "RuntimeError: expected"
     assert results[1]["response"] == "ok"
+
+
+def test_async_generate_predictions_propagates_transport_failure_and_cancels_pending(
+    tmp_path,
+) -> None:
+    predictions_path = tmp_path / "predictions.jsonl"
+
+    async def scenario() -> None:
+        fail = asyncio.Event()
+        cancelled = asyncio.Event()
+        never = asyncio.Event()
+
+        async def generator(prompt: str, system_prompt: str | None):
+            if prompt == "first":
+                return {"response": "done"}
+            if prompt == "fatal":
+                await fail.wait()
+                raise RuntimeError("container lost")
+            try:
+                await never.wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+        task = asyncio.create_task(
+            async_generate_predictions(
+                [
+                    {"id": "A", "prompt": "first"},
+                    {"id": "B", "prompt": "fatal"},
+                    {"id": "C", "prompt": "pending"},
+                ],
+                generator,
+                predictions_path,
+                max_in_flight=3,
+            )
+        )
+        while not predictions_path.exists() or not predictions_path.read_text():
+            await asyncio.sleep(0)
+        fail.set()
+
+        with pytest.raises(RuntimeError, match="container lost"):
+            await asyncio.wait_for(task, timeout=0.5)
+        await asyncio.wait_for(cancelled.wait(), timeout=0.5)
+
+    asyncio.run(scenario())
+
+    rows = [json.loads(line) for line in predictions_path.read_text().splitlines()]
+    assert [(row["id"], row["response"]) for row in rows] == [("A", "done")]
 
 
 def _run_backend(monkeypatch, tmp_path, backend: str):
@@ -329,7 +397,7 @@ def test_vllm_backend_uses_async_writer_and_preserves_config(
             {
                 "type": "repetition_penalty",
                 "penalty": 1.05,
-                "prompt_tokens": "ignored",
+                "prompt_tokens": "included",
             },
             {"type": "presence_penalty", "penalty": 0.5},
         ],
@@ -337,6 +405,7 @@ def test_vllm_backend_uses_async_writer_and_preserves_config(
 
 
 def test_modal_backend_still_uses_sync_writer(monkeypatch, tmp_path) -> None:
-    calls, _ = _run_backend(monkeypatch, tmp_path, "modal")
+    calls, config = _run_backend(monkeypatch, tmp_path, "modal")
 
     assert [call[0] for call in calls] == ["modal_context", "sync"]
+    assert config["generation"]["logits_processor"][0]["prompt_tokens"] == "ignored"

@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing synchronous Transformers Modal backend unchanged for historical experiments. Add a separate vLLM Modal module with a class-level `@modal.concurrent` limit; its async method submits each request to one `AsyncLLM` engine, which performs continuous batching. Add an async ordered writer in the shared inference layer so out-of-order completions are buffered but JSONL remains an exact evaluation-order prefix.
 
-**Tech Stack:** Python 3.11+, Modal 1.5.3+, vLLM 0.13.0, CUDA 12.9 image, asyncio, pytest, existing Transformers/PEFT adapter artifacts, Modal Volumes.
+**Tech Stack:** Python 3.11+ locally, Python 3.13 in Modal, Modal 1.5.3+, vLLM 0.17.0, CUDA 12.9 image, asyncio, pytest, existing Transformers/PEFT adapter artifacts, Modal Volumes.
 
 **Spec:** `docs/superpowers/specs/2026-08-22-vllm-continuous-batching-design.md`
 
@@ -18,7 +18,7 @@
 - Use vLLM-native `SamplingParams` penalties first; do not add a custom repetition processor unless validation shows a meaningful regression.
 - Preserve the current effective SFT LoRA scale of `0.25`; never silently serve the raw adapter.
 - Acceptance requires lower inference wall time than Experiment 07, no new systematic failures, no lower validity rate, and no rule-score mean decrease greater than `0.02` absolute.
-- Pin `vllm==0.13.0` in the Modal CUDA image; do not add vLLM to the host dependency set because local runs must not install the GPU serving stack.
+- Pin `vllm==0.17.0` in the Modal CUDA image; this ruling remains unverified until Task 5 smoke-tests the exact `Qwen/Qwen3.5-4B` path. Do not add vLLM to the host dependency set because local runs must not install the GPU serving stack.
 
 ### Task 1: Add an ordered asynchronous prediction writer
 
@@ -55,10 +55,10 @@ def test_async_generate_predictions_flushes_in_evaluation_order(tmp_path):
     rows = [json.loads(line) for line in (tmp_path / "predictions.jsonl").read_text().splitlines()]
     assert [row["id"] for row in rows] == ["A", "B"]
 
-def test_async_generate_predictions_records_one_failure_and_continues(tmp_path):
+def test_async_generate_predictions_records_one_request_failure_and_continues(tmp_path):
     async def generator(prompt, system_prompt):
         if prompt == "bad":
-            raise RuntimeError("expected")
+            return {"error": "RuntimeError: expected"}
         return {"response": "ok"}
 
     results = asyncio.run(
@@ -94,6 +94,11 @@ async def async_generate_predictions(evals, generator, predictions_path, system_
 ```
 
 Use `asyncio.Semaphore(max_in_flight)` or a bounded worker queue; do not create unbounded tasks for the full evaluation set. Reuse the existing resume-prefix validation instead of inventing a second file format. Export the new type and function from `simple_llm/inference/__init__.py`.
+
+Request-level engine failures arrive as result dictionaries from the remote
+method and are persisted in order. An exception raised by the async generator
+is a Modal transport/container failure: propagate it, cancel every pending
+task, and leave only the already flushed contiguous prefix on disk.
 
 - [ ] **Step 4: Run all inference tests**
 
@@ -159,13 +164,13 @@ Expected: FAIL because the helper module does not exist.
 
 Build the prompt with the repository’s current message shape and `enable_thinking=False`. Map `temperature=0.7`, `top_p=0.8`, `top_k=20`, `max_tokens=2048`, `seed`, `stop_token_ids`, and `skip_special_tokens=True`. Add penalty keys only when supplied; map `None` to vLLM defaults.
 
-For adapter scaling, copy the adapter directory to the requested destination, parse `adapter_config.json`, multiply each LoRA `lora_alpha` by the supplied `scale` (Experiment 08 passes `0.25`), and write the modified config without changing weight files. Reject missing or malformed config and reject scales below zero. Return the destination path. This preserves the existing `scale_layer(0.25)` effective scaling without importing PEFT in the vLLM image.
+For adapter scaling, parse `adapter_config.json`, multiply each LoRA `lora_alpha` by the supplied `scale` (Experiment 08 passes `0.25`), and materialize the adapter in a temporary sibling without changing weight files. Validate the staged config and a source/destination manifest marker before atomically installing it at the requested destination. Reuse only a destination whose marker, scale, config, and file hashes still validate; replace stale, raw, or incomplete caches. Reject missing or malformed config and reject scales below zero. Return the destination path. This preserves the existing `scale_layer(0.25)` effective scaling without importing PEFT in the vLLM image.
 
 Normalize `RequestOutput` using `prompt_token_ids`, `outputs[0].token_ids`, and `outputs[0].text`; set `truncated` when output token count reaches `MAX_NEW_TOKENS`; measure generation duration from the request start.
 
 - [ ] **Step 4: Add adapter and output tests**
 
-Cover config immutability, scaled `lora_alpha`, malformed config rejection, EOS-inclusive output normalization, and a missing output choice. The missing-choice test must assert a `ValueError` with the request ID so the remote layer can record it as a request failure.
+Cover config immutability, scaled `lora_alpha`, validated cache reuse, stale/incomplete destination replacement, interrupted staging cleanup, malformed config rejection, EOS-inclusive output normalization, and a missing output choice. The missing-choice test must assert a `ValueError` with the request ID so the remote layer can record it as a request failure.
 
 - [ ] **Step 5: Run focused and full unit tests**
 
@@ -193,7 +198,7 @@ git commit -m "feat: add vLLM sampling and adapter helpers"
 
 - [ ] **Step 1: Write lifecycle and request tests with fakes**
 
-Test the class logic without starting Modal or CUDA by replacing the lazy `AsyncLLM`, tokenizer, and remote object with fakes. Assert that one request calls `engine.generate` with a unique request ID, the configured `SamplingParams`, and a `LoRARequest` only when an adapter is present. Assert that the final streamed output is normalized and that an engine exception is surfaced as a request-level exception.
+Test the class logic without starting Modal or CUDA by replacing the lazy `AsyncLLM`, tokenizer, and remote object with fakes. Assert that one request calls `engine.generate` with a unique request ID, the configured `SamplingParams`, and a `LoRARequest` only when an adapter is present. Assert that the final streamed output is normalized and that an engine exception is returned as a request-level error dictionary.
 
 - [ ] **Step 2: Run focused tests to verify they fail**
 
@@ -203,7 +208,7 @@ Expected: FAIL because the vLLM Modal module does not exist.
 
 - [ ] **Step 3: Define the isolated Modal image and class**
 
-Create a vLLM-specific image from `nvidia/cuda:12.9.0-devel-ubuntu22.04` with Python 3.13, install `vllm==0.13.0` and `huggingface-hub==0.36.0`, add the local `simple_llm` source, and set `HF_HOME=/cache/huggingface` plus the vLLM cache environment. Mount the existing Hugging Face and training Volumes plus a `simple-llm-vllm-cache` Volume at `/cache/vllm`.
+Create a vLLM-specific image from `nvidia/cuda:12.9.0-devel-ubuntu22.04` with Python 3.13, install `vllm==0.17.0` and `huggingface-hub==0.36.0`, add the local `simple_llm` source, and set `HF_HOME=/cache/huggingface` plus the vLLM cache environment. Treat the vLLM pin as unverified until Task 5 loads the exact target model. Mount the existing Hugging Face and training Volumes plus a `simple-llm-vllm-cache` Volume at `/cache/vllm`.
 
 Define `VLLMModel` with `@app.cls(...)` and class-level `@modal.concurrent(max_inputs=16, target_inputs=16)`. Keep `max_containers=1` for the benchmark so one GPU measures one continuously batched engine.
 
@@ -213,11 +218,11 @@ In `@modal.enter`, load the tokenizer, validate the adapter run when present, ma
 
 - [ ] **Step 5: Implement the async request method and cleanup**
 
-Use `engine.generate(prompt_text, sampling_params, request_id, lora_request=...)` and consume the async iterator until `finished`. Use `modal.current_input_id()` in logs when available. Add `@modal.exit` cleanup that drops the engine reference and calls `shutdown_background_loop()` when that callable exists on the pinned vLLM engine.
+Use `engine.generate(prompt_text, sampling_params, request_id, lora_request=...)` and consume the async iterator until `finished`. Convert per-request engine exceptions to shared result dictionaries with an `error` field; Modal transport/container exceptions occur outside the remote method and must still propagate locally. Use `modal.current_input_id()` in logs when available. Add `@modal.exit` cleanup that drops the engine reference and calls the supported `shutdown()` method when available, falling back to `shutdown_background_loop()` only for compatibility.
 
 - [ ] **Step 6: Add the local context-manager wrapper**
 
-Start `app.run()`, instantiate the parameterized class with `.with_options(gpu=gpu)`, return `remote.generate.aio` as the async generator callable, and include `gpu_requested` plus remote metadata. Validate adapter names before starting the app, matching `modal_generator` behavior.
+Start `app.run()`, instantiate the parameterized class with `.with_options(gpu=gpu)`, return `remote.generate.remote.aio` as the async generator callable, and include `gpu_requested` plus remote metadata. Validate adapter names before starting the app, matching `modal_generator` behavior.
 
 - [ ] **Step 7: Run unit tests and commit**
 
@@ -245,7 +250,7 @@ git commit -m "feat: add AsyncLLM Modal backend"
 
 - [ ] **Step 1: Add runner tests for backend dispatch and config preservation**
 
-Mock both generator context managers and assert that `backend="vllm"` calls the async writer, while `backend="modal"` still calls the synchronous writer. Assert that a vLLM config records `backend`, runtime metadata, and the same generation settings used by Experiment 07.
+Mock both generator context managers and assert that `backend="vllm"` calls the async writer, while `backend="modal"` still calls the synchronous writer. Assert that a vLLM config records `backend`, runtime metadata, and native repetition-penalty scope over prompt plus generated tokens, while legacy Transformers metadata remains generated-only.
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
@@ -325,7 +330,7 @@ uv run python experiments/08_qwen35_4b_sft_vllm.py \
   --limit 32
 ```
 
-Confirm `config.json` records vLLM `0.13.0`, concurrency `16`, adapter scale `0.25`, and native penalty settings.
+First confirm that the pinned vLLM release loads the exact model path `Qwen/Qwen3.5-4B`; the `vllm==0.17.0` pin remains unverified until this smoke test succeeds. Confirm `config.json` records vLLM `0.17.0`, concurrency `16`, adapter scale `0.25`, and native penalty settings.
 
 - [ ] **Step 3: Verify resume and history preservation**
 

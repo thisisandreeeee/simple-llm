@@ -39,11 +39,13 @@ The existing synchronous Transformers class remains available as the legacy
 Modal backend during validation. Experiment 08 selects the vLLM backend
 explicitly. A later change may make vLLM the default only after validation.
 
-The vLLM image will follow Modal's supported throughput pattern and pin the
-tested vLLM release (`vllm==0.13.0`) in a CUDA-compatible image. Hugging Face
-and vLLM cache volumes remain mounted so model and compilation artifacts
-survive container replacement. The exact GPU remains a runner option and is
-held constant for the 07/08 comparison.
+The vLLM image will follow Modal's supported throughput pattern and pin
+`vllm==0.17.0` in a CUDA-compatible Python 3.13 image. This pin is unverified
+until the Task 5 Modal smoke test loads the exact `Qwen/Qwen3.5-4B` model path;
+the smoke test must revise the pin if that load fails. Hugging Face and vLLM
+cache volumes remain mounted so model and compilation artifacts survive
+container replacement. The exact GPU remains a runner option and is held
+constant for the 07/08 comparison.
 
 ## Data flow
 
@@ -69,10 +71,10 @@ on-disk ordering. The Modal class is decorated with
 The limit is configurable and bounded to avoid GPU out-of-memory errors; it
 is tuned using measurements.
 
-The runner uses `remote.generate.aio` from an asyncio coordinator and keeps a
-bounded set of in-flight calls. The existing synchronous runner remains the
-public entry point; it invokes the coordinator with `asyncio.run` only for the
-vLLM backend.
+The runner uses `remote.generate.remote.aio` from an asyncio coordinator and
+keeps a bounded set of in-flight calls. The existing synchronous runner
+remains the public entry point; it invokes the coordinator with `asyncio.run`
+only for the vLLM backend.
 
 ## Model and adapter handling
 
@@ -84,9 +86,11 @@ validated with the existing `training_adapter_path` and
 The current path's effective LoRA scale is `0.25`. The first implementation
 will materialize a vLLM-loadable adapter variant whose effective scaling
 matches `0.25`, verify its config and weights, and pass that adapter to every
-request. It must not silently serve the raw adapter. If the tested vLLM
-release cannot reproduce the scale without changing weights, the fallback is
-to create a merged, scaled model artifact before starting the engine; that
+request. Materialization stages in a temporary sibling and atomically installs
+a self-validating cache with a source/destination manifest marker; stale, raw,
+or incomplete destinations are never reused. If the tested vLLM release
+cannot reproduce the scale without changing weights, the fallback is to
+create a merged, scaled model artifact before starting the engine; that
 fallback is a validation blocker, not an untracked behavior change.
 
 ## Sampling and stop behavior

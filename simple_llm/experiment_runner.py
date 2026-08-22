@@ -81,6 +81,9 @@ def summarize_inference(
     }
     if wall_seconds is not None:
         summary["wall_seconds"] = wall_seconds
+        summary["wall_output_tokens_per_second"] = (
+            total_tokens / wall_seconds if wall_seconds else None
+        )
     return summary
 
 
@@ -151,7 +154,9 @@ def run_experiment(
             {
                 "type": "repetition_penalty",
                 "penalty": repetition_penalty,
-                "prompt_tokens": "ignored",
+                "prompt_tokens": (
+                    "included" if args.backend == "vllm" else "ignored"
+                ),
             }
         )
     if presence_penalty is not None:

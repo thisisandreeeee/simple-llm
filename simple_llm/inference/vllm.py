@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
 from .local import MAX_NEW_TOKENS
+
+SCALED_ADAPTER_MARKER = ".simple-llm-scaled-adapter.json"
 
 
 def format_prompt(tokenizer: Any, prompt: str, system_prompt: str | None) -> str:
@@ -50,9 +56,61 @@ def build_sampling_params(
 
 
 def prepare_scaled_adapter(adapter_path: Path, scale: float, destination: Path) -> Path:
-    """Copy an adapter and scale its LoRA alpha without touching its weights."""
+    """Atomically cache an adapter whose LoRA alpha has the requested scale."""
     if scale < 0:
         raise ValueError("adapter scale must be non-negative")
+    config, alpha = _adapter_config(adapter_path)
+    scaled_alpha = alpha * scale
+    source_manifest = _adapter_manifest(adapter_path)
+    if _valid_scaled_adapter(
+        destination, scale, scaled_alpha, source_manifest
+    ):
+        return destination
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    stage = Path(
+        tempfile.mkdtemp(prefix=f".{destination.name}.stage-", dir=destination.parent)
+    )
+    backup: Path | None = None
+    try:
+        shutil.copytree(adapter_path, stage, dirs_exist_ok=True)
+        config["lora_alpha"] = scaled_alpha
+        (stage / "adapter_config.json").write_text(
+            json.dumps(config, indent=2) + "\n", encoding="utf-8"
+        )
+        marker = {
+            "version": 1,
+            "scale": scale,
+            "source_manifest": source_manifest,
+            "scaled_manifest": _adapter_manifest(stage),
+        }
+        (stage / SCALED_ADAPTER_MARKER).write_text(
+            json.dumps(marker, indent=2) + "\n", encoding="utf-8"
+        )
+        if not _valid_scaled_adapter(stage, scale, scaled_alpha, source_manifest):
+            raise ValueError(f"Invalid scaled adapter: {stage}")
+
+        if destination.exists():
+            backup = destination.with_name(
+                f".{destination.name}.stale-{uuid.uuid4().hex}"
+            )
+            os.replace(destination, backup)
+        try:
+            os.replace(stage, destination)
+        except Exception:
+            if backup is not None and not destination.exists():
+                os.replace(backup, destination)
+                backup = None
+            raise
+        if backup is not None:
+            _remove_path(backup)
+    finally:
+        if stage.exists():
+            _remove_path(stage)
+    return destination
+
+
+def _adapter_config(adapter_path: Path) -> tuple[dict[str, Any], int | float]:
     config_path = adapter_path / "adapter_config.json"
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -63,13 +121,47 @@ def prepare_scaled_adapter(adapter_path: Path, scale: float, destination: Path) 
         alpha, (int, float)
     ):
         raise ValueError(f"Invalid adapter config: {config_path}")
+    return config, alpha
 
-    shutil.copytree(adapter_path, destination)
-    config["lora_alpha"] = alpha * scale
-    (destination / "adapter_config.json").write_text(
-        json.dumps(config, indent=2) + "\n", encoding="utf-8"
-    )
-    return destination
+
+def _adapter_manifest(adapter_path: Path) -> dict[str, str]:
+    manifest = {}
+    for path in sorted(adapter_path.rglob("*")):
+        if not path.is_file() or path.name == SCALED_ADAPTER_MARKER:
+            continue
+        manifest[str(path.relative_to(adapter_path))] = hashlib.sha256(
+            path.read_bytes()
+        ).hexdigest()
+    return manifest
+
+
+def _valid_scaled_adapter(
+    destination: Path,
+    scale: float,
+    scaled_alpha: int | float,
+    source_manifest: dict[str, str],
+) -> bool:
+    try:
+        marker = json.loads(
+            (destination / SCALED_ADAPTER_MARKER).read_text(encoding="utf-8")
+        )
+        _, alpha = _adapter_config(destination)
+        return (
+            marker.get("version") == 1
+            and marker.get("scale") == scale
+            and marker.get("source_manifest") == source_manifest
+            and marker.get("scaled_manifest") == _adapter_manifest(destination)
+            and alpha == scaled_alpha
+        )
+    except (AttributeError, json.JSONDecodeError, OSError, TypeError, ValueError):
+        return False
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink(missing_ok=True)
 
 
 def normalize_vllm_output(

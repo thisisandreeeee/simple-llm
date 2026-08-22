@@ -151,7 +151,9 @@ Compare the two run directories' `summary.json` and `rule_scores.json` for
 speed and quality, `config.json` for matching generation settings and runtime
 metadata, and samples from `predictions.jsonl` for response and token-count
 differences. vLLM is not the default Modal backend until the benchmark
-acceptance criteria pass.
+acceptance criteria pass. The Python 3.13 Modal image currently pins
+`vllm==0.17.0`; that pin remains unverified until the Task 5 smoke test loads
+the exact `Qwen/Qwen3.5-4B` model path.
 
 The 4B experiments use an L4 by default. Pass `--gpu A10` or `--gpu L40S` to
 compare hardware, or `--limit N` for a smaller run. Model weights are cached in
