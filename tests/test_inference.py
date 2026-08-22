@@ -1,3 +1,4 @@
+import asyncio
 import json
 from types import SimpleNamespace
 
@@ -8,6 +9,7 @@ from transformers import RepetitionPenaltyLogitsProcessor
 from simple_llm.experiment_runner import summarize_inference
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
+    async_generate_predictions,
     generate,
     generate_predictions,
 )
@@ -205,3 +207,41 @@ def test_generate_predictions_rejects_mismatched_prefix(tmp_path) -> None:
             lambda *_: {},
             predictions_path,
         )
+
+
+def test_async_generate_predictions_flushes_in_evaluation_order(tmp_path) -> None:
+    async def generator(prompt: str, system_prompt: str | None):
+        await asyncio.sleep(0.02 if prompt == "first" else 0.0)
+        return {"response": prompt}
+
+    predictions_path = tmp_path / "predictions.jsonl"
+    results = asyncio.run(
+        async_generate_predictions(
+            [{"id": "A", "prompt": "first"}, {"id": "B", "prompt": "second"}],
+            generator,
+            predictions_path,
+            max_in_flight=2,
+        )
+    )
+
+    assert [item["id"] for item in results] == ["A", "B"]
+    rows = [json.loads(line) for line in predictions_path.read_text().splitlines()]
+    assert [row["id"] for row in rows] == ["A", "B"]
+
+
+def test_async_generate_predictions_records_one_failure_and_continues(tmp_path) -> None:
+    async def generator(prompt: str, system_prompt: str | None):
+        if prompt == "bad":
+            raise RuntimeError("expected")
+        return {"response": "ok"}
+
+    results = asyncio.run(
+        async_generate_predictions(
+            [{"id": "A", "prompt": "bad"}, {"id": "B", "prompt": "good"}],
+            generator,
+            tmp_path / "predictions.jsonl",
+        )
+    )
+
+    assert results[0]["error"] == "RuntimeError: expected"
+    assert results[1]["response"] == "ok"
