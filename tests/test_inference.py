@@ -1,12 +1,14 @@
 import asyncio
 import json
+import sys
+from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
 import torch
 from transformers import RepetitionPenaltyLogitsProcessor
 
-from simple_llm.experiment_runner import summarize_inference
+from simple_llm import experiment_runner
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
     async_generate_predictions,
@@ -162,7 +164,7 @@ def test_inference_and_rule_scoring_are_separate_steps(tmp_path) -> None:
     assert "validity" not in saved[0]
     assert "scores" not in saved[0]
     assert saved[1]["error"] == "RuntimeError: expected"
-    diagnostics = summarize_inference(results)
+    diagnostics = experiment_runner.summarize_inference(results)
     assert diagnostics["output_tokens_per_second"] == 10
     assert diagnostics["successful_count"] == 1
 
@@ -245,3 +247,96 @@ def test_async_generate_predictions_records_one_failure_and_continues(tmp_path) 
 
     assert results[0]["error"] == "RuntimeError: expected"
     assert results[1]["response"] == "ok"
+
+
+def _run_backend(monkeypatch, tmp_path, backend: str):
+    from simple_llm.inference import modal, modal_vllm
+
+    calls = []
+
+    @contextmanager
+    def modal_context(*args, **kwargs):
+        calls.append(("modal_context", args, kwargs))
+        yield lambda *_: {}, {
+            "gpu_actual": "test-gpu",
+            "runtime_version": "test-version",
+        }
+
+    @contextmanager
+    def vllm_context(*args, **kwargs):
+        calls.append(("vllm_context", args, kwargs))
+        yield lambda *_: {}, {
+            "gpu_actual": "test-gpu",
+            "runtime_version": "test-version",
+        }
+
+    def sync_writer(*args):
+        calls.append(("sync", args))
+        return []
+
+    async def async_writer(*args):
+        calls.append(("async", args))
+        return []
+
+    monkeypatch.setattr(experiment_runner, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        experiment_runner, "load_evals", lambda: [{"id": "A-1", "prompt": "p"}]
+    )
+    monkeypatch.setattr(experiment_runner, "git_info", lambda: {"commit": "test"})
+    monkeypatch.setattr(experiment_runner, "generate_predictions", sync_writer)
+    monkeypatch.setattr(
+        experiment_runner, "async_generate_predictions", async_writer, raising=False
+    )
+    monkeypatch.setattr(experiment_runner, "score_predictions", lambda *_: None)
+    monkeypatch.setattr(modal, "modal_generator", modal_context)
+    monkeypatch.setattr(modal_vllm, "modal_vllm_generator", vllm_context)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["experiment", "--backend", backend, "--adapter-run", "training-run"],
+    )
+
+    experiment_runner.run_experiment(
+        experiment="test",
+        model="Qwen/Qwen3.5-4B",
+        condition="test",
+        require_adapter_run=True,
+        presence_penalty=0.5,
+        repetition_penalty=1.05,
+    )
+
+    config_path = next((tmp_path / "runs").glob("*/config.json"))
+    return calls, json.loads(config_path.read_text())
+
+
+def test_vllm_backend_uses_async_writer_and_preserves_config(
+    monkeypatch, tmp_path
+) -> None:
+    calls, config = _run_backend(monkeypatch, tmp_path, "vllm")
+
+    assert [call[0] for call in calls] == ["vllm_context", "async"]
+    assert config["backend"] == "vllm"
+    assert config["gpu_actual"] == "test-gpu"
+    assert config["runtime_version"] == "test-version"
+    assert config["seed"] == 42
+    assert config["generation"] == {
+        "do_sample": True,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_new_tokens": 2048,
+        "logits_processor": [
+            {
+                "type": "repetition_penalty",
+                "penalty": 1.05,
+                "prompt_tokens": "ignored",
+            },
+            {"type": "presence_penalty", "penalty": 0.5},
+        ],
+    }
+
+
+def test_modal_backend_still_uses_sync_writer(monkeypatch, tmp_path) -> None:
+    calls, _ = _run_backend(monkeypatch, tmp_path, "modal")
+
+    assert [call[0] for call in calls] == ["modal_context", "sync"]
