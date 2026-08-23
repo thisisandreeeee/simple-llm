@@ -176,17 +176,11 @@ uv run python -m simple_llm.scoring.judge_scoring \
 The retry limit applies only when the judge returns invalid JSON. Other
 failures are recorded immediately.
 
-## Roadmap
-
-Todo:
-
-- Serve inference with vLLM
-- Publish to hugging face: adapter, model card, training configs, evaluation results, base-model attribution
-
-Later:
+## Backlog
 
 - Add DPO data generation and training
 - Implement RLAIF with GRPO
+- Serve inference with vLLM
 
 ## License
 
