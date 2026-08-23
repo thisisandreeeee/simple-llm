@@ -1,5 +1,9 @@
 # simple-llm
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Hugging Face model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-lora)
+[![Hugging Face dataset](https://img.shields.io/badge/%F0%9F%A4%97_Dataset-simple--llm--sft-yellow)](https://huggingface.co/datasets/thisisandreeeee/simple-llm-sft)
+
 Post-train and evaluate Qwen3.5-4B for clear technical writing based on
 [ASD-STE100 Simplified Technical English](https://www.asd-ste100.org/).
 
@@ -183,3 +187,9 @@ Later:
 
 - Add DPO data generation and training
 - Implement RLAIF with GRPO
+
+## License
+
+The repository code is licensed under [Apache-2.0](LICENSE). The model adapter
+and dataset are separate artifacts with licenses declared on their Hugging Face
+pages.
