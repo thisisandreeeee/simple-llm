@@ -150,14 +150,14 @@ Keep about half of the SFT prompts aligned with the evaluation subjects and fail
 
 Use this initial prompt-intent mix:
 
-| Prompt intent             | Share |
+| Prompt intent            | Share |
 | ------------------------ | ----: |
-| Explanation               |   25% |
-| Documentation              |   20% |
-| Troubleshooting            |   15% |
-| Procedure                  |   15% |
-| Comparison                 |   15% |
-| Misconception correction   |   10% |
+| Explanation              |   25% |
+| Documentation            |   20% |
+| Troubleshooting          |   15% |
+| Procedure                |   15% |
+| Comparison               |   15% |
+| Misconception correction |   10% |
 
 ### Target generation
 
