@@ -4,14 +4,48 @@
 [![Hugging Face model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-lora)
 [![Hugging Face dataset](https://img.shields.io/badge/%F0%9F%A4%97_Dataset-simple--llm--sft-yellow)](https://huggingface.co/datasets/thisisandreeeee/simple-llm-sft)
 
-Post-train and evaluate Qwen3.5-4B for clear technical writing based on
-[ASD-STE100 Simplified Technical English](https://www.asd-ste100.org/).
+Can we post-train a small language model to produce technical answers that are both correct and simple?
 
-The current pipeline compares the base model, a Simple English system prompt,
-and supervised fine-tuning (SFT). Preference training will come after the SFT
-pipeline is stable.
+simple-llm is an end-to-end post-training experiment built around that question.
 
-The target style is accurate technical writing that:
+Starting from Qwen3.5-4B, the project compares:
+
+the base model,
+prompt engineering for simpler answers, and
+supervised fine-tuning (SFT) with LoRA.
+
+The target style is inspired by ASD-STE100 Simplified Technical English: short sentences, common words, direct language, and one main idea at a time — without sacrificing technical correctness.
+
+## How it works
+
+```
+Technical prompts
+  │
+  ▼
+Generate simple answers
+  │
+  ▼
+Build SFT dataset
+  │
+  ▼
+LoRA fine-tune Qwen3.5-4B
+  │
+  ▼
+Run controlled experiments
+  │
+  ├── Base model
+  ├── Prompt engineered
+  └── SFT
+  │
+  ▼
+Evaluate
+  ├── Deterministic language checks
+  └── LLM-as-a-judge
+```
+
+## Target writing style
+
+The model is trained toward technical writing that:
 
 1. Uses sentences of about 20 words or fewer.
 2. Prefers common words and active voice.
@@ -19,7 +53,9 @@ The target style is accurate technical writing that:
 4. Avoids unnecessary qualifiers, hedging, and long introductions.
 5. Preserves necessary technical terms and factual correctness.
 
-## Setup
+## Reproduce the experiment
+
+### Setup
 
 Install [uv](https://docs.astral.sh/uv/), then install the locked dependencies:
 
@@ -30,7 +66,7 @@ uv sync
 Use `uv run` for the commands below, or activate the environment with
 `source .venv/bin/activate`.
 
-### DeepSeek
+#### DeepSeek
 
 DeepSeek generates SFT answers and judges experiment results. Copy the example
 environment file, add your API key, and load it into the current shell:
@@ -46,7 +82,7 @@ set +a
 
 `.env` is gitignored. Do not commit it.
 
-### Modal and Hugging Face
+#### Modal and Hugging Face
 
 Training and 4B inference run on [Modal](https://modal.com/). Authenticate the
 CLI and create the Hugging Face secret expected by the training job:
