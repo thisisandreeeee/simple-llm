@@ -55,6 +55,8 @@ The model is trained toward technical writing that:
 
 ## Experiment results
 
+Prompt engineering simplified answers most aggressively, but at a clear cost to quality; SFT achieved the strongest balance, improving simplicity while largely preserving correctness.
+
 | Metric                    |       Base |  Prompted |        SFT |
 | ------------------------- | ---------: | --------: | ---------: |
 | **Semantic simplicity ↑** |     65.82% |    74.75% | **79.21%** |
