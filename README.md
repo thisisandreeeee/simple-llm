@@ -4,17 +4,17 @@
 [![Hugging Face model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-lora)
 [![Hugging Face dataset](https://img.shields.io/badge/%F0%9F%A4%97_Dataset-simple--llm--sft-yellow)](https://huggingface.co/datasets/thisisandreeeee/simple-llm-sft)
 
-Can we post-train a small language model to produce technical answers that are both correct and simple?
+**Can we post-train a small language model to produce technical answers that are both correct and simple?**
 
-simple-llm is an end-to-end post-training experiment built around that question.
+`simple-llm` is an end-to-end experiment built around that question.
 
 Starting from Qwen3.5-4B, the project compares:
 
-the base model,
-prompt engineering for simpler answers, and
-supervised fine-tuning (SFT) with LoRA.
+- the base model,
+- prompt engineering for simpler answers, and
+- supervised fine-tuning (SFT) with LoRA.
 
-The target style is inspired by ASD-STE100 Simplified Technical English: short sentences, common words, direct language, and one main idea at a time — without sacrificing technical correctness.
+The target style is inspired by [ASD-STE100](https://www.asd-ste100.org/) Simplified Technical English: short sentences, common words, direct language, and one main idea at a time — without sacrificing technical correctness.
 
 ## How it works
 
@@ -53,9 +53,19 @@ The model is trained toward technical writing that:
 4. Avoids unnecessary qualifiers, hedging, and long introductions.
 5. Preserves necessary technical terms and factual correctness.
 
-## Reproduce the experiment
+## Experiment results
 
-### Setup
+| Metric                    |       Base |  Prompted |        SFT |
+| ------------------------- | ---------: | --------: | ---------: |
+| **Semantic simplicity ↑** |     65.82% |    74.75% | **79.21%** |
+| **Technical adequacy ↑**  |     68.30% |    59.18% | **71.88%** |
+| **Task fulfilment ↑**     | **97.96%** |    87.75% |     95.57% |
+| **Clarity & coherence ↑** | **92.09%** |    85.25% |     90.63% |
+| Average sentence length ↓ |      17.93 | **11.15** |      15.37 |
+| Long-sentence fraction ↓  |     25.44% | **4.22%** |     15.76% |
+| Mean output tokens ↓      |    1,245.8 | **279.0** |      679.2 |
+
+## Setup
 
 Install [uv](https://docs.astral.sh/uv/), then install the locked dependencies:
 
@@ -66,7 +76,7 @@ uv sync
 Use `uv run` for the commands below, or activate the environment with
 `source .venv/bin/activate`.
 
-#### DeepSeek
+### DeepSeek
 
 DeepSeek generates SFT answers and judges experiment results. Copy the example
 environment file, add your API key, and load it into the current shell:
@@ -82,7 +92,7 @@ set +a
 
 `.env` is gitignored. Do not commit it.
 
-#### Modal and Hugging Face
+### Modal and Hugging Face
 
 Training and 4B inference run on [Modal](https://modal.com/). Authenticate the
 CLI and create the Hugging Face secret expected by the training job:
