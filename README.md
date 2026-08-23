@@ -226,9 +226,9 @@ failures are recorded immediately.
 
 ## Backlog
 
-- Add DPO data generation and training
-- Implement RLAIF with GRPO
-- Serve inference with vLLM
+- [ ] Add DPO data generation and training
+- [ ] Implement RLAIF with GRPO
+- [ ] Serve inference with vLLM
 
 ## License
 
