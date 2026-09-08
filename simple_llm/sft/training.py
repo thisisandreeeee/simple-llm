@@ -5,21 +5,24 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import modal
 
+from simple_llm.modal import (
+    HF_CACHE_DIR,
+    TRAINING_DIR,
+    build_training_image,
+    get_training_volumes,
+    register_tensorboard_app,
+    validate_run_name,
+)
+
 REMOTE_TRAIN_DATASET = "/workspace/sft_train.jsonl"
 REMOTE_EVAL_DATASET = "/workspace/sft_eval.jsonl"
-HF_CACHE_DIR = "/cache/huggingface"
-TRAINING_DIR = "/training"
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-# Mount the package root so serialized functions retain their
-# ``simple_llm.sft.training`` import path in Modal.
-PACKAGE_DIR = Path(__file__).resolve().parents[1]
 TRAIN_DATASET_PATH = DATA_DIR / "sft_train.jsonl"
 EVAL_DATASET_PATH = DATA_DIR / "sft_eval.jsonl"
 MODEL_NAME = "Qwen/Qwen3.5-4B"
@@ -95,65 +98,30 @@ def run_training() -> None:
     run_name = args.run_name or datetime.now(timezone.utc).strftime(
         "qwen35-4b-sft-%Y%m%d-%H%M%S"
     )
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", run_name):
-        parser.error("--run-name may contain only letters, numbers, '.', '_', and '-'")
+    try:
+        validate_run_name(run_name)
+    except ValueError as error:
+        parser.error(str(error))
 
-    hf_cache = modal.Volume.from_name(
-        "simple-llm-huggingface-cache", create_if_missing=True
-    )
-    training_volume = modal.Volume.from_name(
-        "simple-llm-training", create_if_missing=True
-    )
-    image = (
-        modal.Image.debian_slim(python_version="3.12")
-        .uv_pip_install(
+    volumes = get_training_volumes()
+    hf_cache = volumes[HF_CACHE_DIR]
+    training_volume = volumes[TRAINING_DIR]
+    image = build_training_image(
+        (
             "unsloth==2026.7.6",
             "torch==2.11.0",
             "transformers==5.5.0",
             "trl==0.24.0",
             "datasets==4.3.0",
             "tensorboard",
-        )
-        .env({"HF_HOME": HF_CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
-        .add_local_file(TRAIN_DATASET_PATH, REMOTE_TRAIN_DATASET, copy=True)
-        .add_local_file(EVAL_DATASET_PATH, REMOTE_EVAL_DATASET, copy=True)
-        .add_local_dir(PACKAGE_DIR, "/root/simple_llm", ignore=["**/__pycache__/**"])
+        ),
+        (
+            (TRAIN_DATASET_PATH, REMOTE_TRAIN_DATASET),
+            (EVAL_DATASET_PATH, REMOTE_EVAL_DATASET),
+        ),
     )
     app = modal.App("simple-llm-sft")
-
-    class VolumeMiddleware:
-        def __init__(self, wsgi_app):
-            self.wsgi_app = wsgi_app
-
-        def __call__(self, environ, start_response):
-            if environ.get("PATH_INFO") == "/":
-                try:
-                    training_volume.reload()
-                except Exception as error:
-                    print(f"Could not reload TensorBoard logs: {error}")
-            return self.wsgi_app(environ, start_response)
-
-    @app.function(
-        serialized=True,
-        image=image,
-        volumes={TRAINING_DIR: training_volume},
-        max_containers=1,
-    )
-    @modal.wsgi_app()
-    def tensorboard_app():
-        import tensorboard
-
-        board = tensorboard.program.TensorBoard()
-        board.configure(logdir=TRAINING_DIR, load_fast="false")
-        data_provider, deprecated_multiplexer = board._make_data_provider()
-        return tensorboard.backend.application.TensorBoardWSGIApp(
-            board.flags,
-            board.plugin_loaders,
-            data_provider,
-            board.assets_zip_provider,
-            deprecated_multiplexer,
-            experimental_middlewares=[VolumeMiddleware],
-        )
+    register_tensorboard_app(app, image, training_volume)
 
     @app.function(
         serialized=True,
