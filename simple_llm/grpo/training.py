@@ -77,6 +77,7 @@ def run_training() -> None:
     parser.add_argument("--run-name", default="")
     parser.add_argument("--num-generations", type=int, default=DEFAULT_NUM_GENERATIONS)
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
+    parser.add_argument("--max-steps", type=int, default=-1)
     parser.add_argument(
         "--detach", action="store_true", help="Keep the Modal app running on exit."
     )
@@ -85,6 +86,8 @@ def run_training() -> None:
         parser.error("--num-generations must be at least 2")
     if args.temperature < 0:
         parser.error("--temperature must be non-negative")
+    if args.max_steps == 0 or args.max_steps < -1:
+        parser.error("--max-steps must be -1 or a positive integer")
 
     run_name = args.run_name or datetime.now(timezone.utc).strftime(
         "qwen35-4b-grpo-%Y%m%d-%H%M%S"
@@ -99,7 +102,7 @@ def run_training() -> None:
     training_volume = volumes[TRAINING_DIR]
     image = build_training_image(
         (
-            "unsloth==2026.7.6",
+            "unsloth==2026.9.3",
             "torch==2.11.0",
             "transformers==5.5.0",
             "trl==0.24.0",
@@ -126,8 +129,21 @@ def run_training() -> None:
         ],
         timeout=24 * 60 * 60,
     )
-    def train(run_name: str, num_generations: int, temperature: float) -> str:
-        import importlib.metadata
+    def train(
+        run_name: str, num_generations: int, temperature: float, max_steps: int
+    ) -> str:
+        import sys
+
+        from huggingface_hub import snapshot_download
+
+        kernel_snapshot = snapshot_download(
+            "kernels-community/causal-conv1d",
+            revision="f2651e776f66069cdcf842840db637583def1223",
+            allow_patterns="build/torch211-cxx11-cu130-x86_64-linux/*",
+        )
+        sys.path.insert(
+            0, f"{kernel_snapshot}/build/torch211-cxx11-cu130-x86_64-linux"
+        )
 
         # Unsloth must patch Transformers and TRL before they are imported.
         from unsloth import FastLanguageModel, PatchFastRL
@@ -156,6 +172,11 @@ def run_training() -> None:
             load_in_16bit=True,
             full_finetuning=False,
         )
+        from transformers.models.qwen3_5 import modeling_qwen3_5
+
+        if not modeling_qwen3_5.is_fast_path_available:
+            raise RuntimeError("Qwen3.5 optimized kernel path is unavailable")
+        print("Qwen3.5 optimized kernel path is active")
         model = FastLanguageModel.get_peft_model(
             model,
             finetune_vision_layers=False,
@@ -194,7 +215,7 @@ def run_training() -> None:
             num_generations=num_generations,  # Decrease if out of memory
             max_prompt_length=512,
             max_completion_length=1024,
-            max_steps=-1,
+            max_steps=max_steps,
             num_train_epochs=1,
             bf16=True,
             seed=SEED,
@@ -224,7 +245,7 @@ def run_training() -> None:
     print(f"Starting {run_name} on {args.gpu}")
     with modal.enable_output(), app.run(detach=args.detach):
         call = train.with_options(gpu=args.gpu).spawn(
-            run_name, args.num_generations, args.temperature
+            run_name, args.num_generations, args.temperature, args.max_steps
         )
         print(f"Monitor training at {call.get_dashboard_url()}")
         print(f"Saved reward report to {call.get()}")
