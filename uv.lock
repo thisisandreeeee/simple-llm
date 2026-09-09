@@ -2756,6 +2756,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "deepeval" },
     { name = "modal" },
+    { name = "openai" },
     { name = "pydantic" },
     { name = "torch" },
     { name = "transformers" },
@@ -2774,6 +2775,7 @@ dev = [
 requires-dist = [
     { name = "deepeval", specifier = "==4.1.4" },
     { name = "modal", specifier = ">=1.5.3" },
+    { name = "openai", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "torch", specifier = ">=2.0.0" },
     { name = "transformers", specifier = ">=5.14.1" },
