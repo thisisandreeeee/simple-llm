@@ -32,8 +32,6 @@ SEED = 42
 MAX_LENGTH = 2048
 DEFAULT_GPU = "L4"
 DEFAULT_NUM_GENERATIONS = 4
-DEFAULT_MAX_PROMPTS = 8
-DEFAULT_MAX_COMPLETION_LENGTH = 512
 DEFAULT_TEMPERATURE = 0.9
 
 
@@ -45,9 +43,7 @@ def make_prompt_id(row_number: int, prompt: str) -> str:
     return f"{row_number:06d}-{digest}"
 
 
-def to_prompt_rows(
-    rows: list[dict[str, Any]], tokenizer: Any
-) -> list[dict[str, Any]]:
+def to_prompt_rows(rows: list[dict[str, Any]], tokenizer: Any) -> list[dict[str, Any]]:
     """Convert validated SFT rows to rendered prompt-only GRPO rows."""
 
     return [
@@ -108,6 +104,7 @@ def run_training() -> None:
             "transformers==5.5.0",
             "trl==0.24.0",
             "datasets==4.3.0",
+            "openai==3.0.0",
             "tensorboard",
         ),
         (
@@ -123,8 +120,10 @@ def run_training() -> None:
         image=image,
         gpu="L4",
         volumes={HF_CACHE_DIR: hf_cache, TRAINING_DIR: training_volume},
-        secrets=[modal.Secret.from_name("huggingface")],
-        retries=1,
+        secrets=[
+            modal.Secret.from_name("huggingface"),
+            modal.Secret.from_name("deepseek"),
+        ],
         timeout=24 * 60 * 60,
     )
     def train(run_name: str, num_generations: int, temperature: float) -> str:
@@ -139,12 +138,10 @@ def run_training() -> None:
         from transformers.trainer_utils import get_last_checkpoint
         from trl import GRPOConfig, GRPOTrainer
 
-        source_rows = load_dataset_rows(Path(REMOTE_TRAIN_DATASET))[:DEFAULT_MAX_PROMPTS]
+        source_rows = load_dataset_rows(Path(REMOTE_TRAIN_DATASET))
         if not source_rows:
             raise ValueError("No GRPO prompts are available for the smoke test")
         run_dir = Path(TRAINING_DIR) / run_name
-        if run_dir.exists():
-            raise FileExistsError(f"Run already exists: {run_dir}")
         run_dir.mkdir(parents=True, exist_ok=True)
         adapter_dir = run_dir / "adapter"
         checkpoint_dir = run_dir / "checkpoints"
@@ -193,18 +190,20 @@ def run_training() -> None:
             logging_steps=1,
             log_completions=False,
             per_device_train_batch_size=1,
-            gradient_accumulation_steps=1,
+            gradient_accumulation_steps=4,
             num_generations=num_generations,  # Decrease if out of memory
-            max_prompt_length=1024,
+            max_prompt_length=512,
             max_completion_length=1024,
             max_steps=-1,
-            num_train_epochs=1.0,
+            num_train_epochs=1,
             bf16=True,
             seed=SEED,
             temperature=temperature,
-            report_to="none",
+            report_to="tensorboard",
             output_dir=str(checkpoint_dir),
             remove_unused_columns=False,
+            save_steps=5,
+            save_total_limit=2,
         )
         trainer = GRPOTrainer(
             model=model,
