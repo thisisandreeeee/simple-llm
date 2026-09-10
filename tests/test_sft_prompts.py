@@ -5,7 +5,6 @@ import pytest
 from pydantic import ValidationError
 
 from simple_llm.sft.prompts import (
-    PromptRecord,
     SFTExample,
     allocate_counts,
     build_strata,
