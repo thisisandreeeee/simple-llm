@@ -169,7 +169,22 @@ uvx --from tensorboard tensorboard --logdir ./tensorboard-logs
 
 Then open <http://localhost:6006>.
 
-### 3. Run experiments
+### 3. Train with GRPO from the SFT adapter
+
+Start GRPO from the completed `qwen35-4b-sft-20260821-025306` SFT adapter:
+
+```bash
+uv run python -m simple_llm.grpo.training \
+  --adapter-run qwen35-4b-sft-20260821-025306 \
+  --detach
+```
+
+`--adapter-run` is required. The job loads the adapter from the shared
+`simple-llm-training` Modal Volume and continues training its LoRA parameters;
+it does not merge the adapter into the base model first. Use `--run-name` to
+name the GRPO output run or `--max-steps 1` for a smoke test.
+
+### 4. Run experiments
 
 Run the main 4B baselines on Modal:
 
@@ -210,7 +225,7 @@ uv run python experiments/01_qwen35_08b_base.py
 uv run python experiments/02_qwen35_08b_sysprompt.py
 ```
 
-### 4. Judge a run
+### 5. Judge a run
 
 After an experiment completes, judge its predictions with up to 50 concurrent
 requests:
