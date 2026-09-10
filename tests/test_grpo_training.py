@@ -2,7 +2,10 @@ import json
 
 import pytest
 
-from simple_llm.grpo.training import load_grpo_rows
+from simple_llm.grpo.training import (
+    load_grpo_rows,
+    validate_trainable_lora_parameters,
+)
 
 
 class FakeTokenizer:
@@ -13,6 +16,23 @@ class FakeTokenizer:
             "enable_thinking": False,
         }
         return messages[0]["content"][0]["text"] + " [assistant]"
+
+
+class FakeParameter:
+    def __init__(self, size: int, *, requires_grad: bool):
+        self.size = size
+        self.requires_grad = requires_grad
+
+    def numel(self):
+        return self.size
+
+
+class FakeModel:
+    def __init__(self, parameters):
+        self.parameters = parameters
+
+    def named_parameters(self):
+        return iter(self.parameters)
 
 
 def _row(prompt: str, answer: str = "Reference answer") -> dict:
@@ -70,3 +90,32 @@ def test_load_grpo_rows_reuses_dataset_validation(tmp_path):
     path.write_text('{"messages": []}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="row 1"):
         load_grpo_rows(path, tokenizer=FakeTokenizer())
+
+
+def test_validate_trainable_lora_parameters_reports_adapter(capsys):
+    model = FakeModel(
+        [
+            ("base.weight", FakeParameter(90, requires_grad=False)),
+            ("q_proj.lora_A.default.weight", FakeParameter(10, requires_grad=True)),
+        ]
+    )
+
+    validate_trainable_lora_parameters(model)
+
+    assert "10 / 100 (10.0000%)" in capsys.readouterr().out
+
+
+def test_validate_trainable_lora_parameters_rejects_frozen_adapter():
+    model = FakeModel(
+        [("q_proj.lora_A.default.weight", FakeParameter(10, requires_grad=False))]
+    )
+
+    with pytest.raises(RuntimeError, match="no trainable parameters"):
+        validate_trainable_lora_parameters(model)
+
+
+def test_validate_trainable_lora_parameters_rejects_trainable_base_model():
+    model = FakeModel([("base.weight", FakeParameter(10, requires_grad=True))])
+
+    with pytest.raises(RuntimeError, match="base.weight"):
+        validate_trainable_lora_parameters(model)

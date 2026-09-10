@@ -69,12 +69,38 @@ def load_grpo_rows(
     return to_prompt_rows(load_dataset_rows(path), tokenizer)
 
 
+def validate_trainable_lora_parameters(model: Any) -> None:
+    """Require the loaded SFT adapter, and only that adapter, to be trainable."""
+    parameters = list(model.named_parameters())
+    trainable = [
+        (name, parameter) for name, parameter in parameters if parameter.requires_grad
+    ]
+    if not trainable:
+        raise RuntimeError("The loaded SFT adapter has no trainable parameters")
+    unexpected = [name for name, _ in trainable if "lora_" not in name]
+    if unexpected:
+        raise RuntimeError(
+            "Unexpected non-LoRA parameters are trainable: " + ", ".join(unexpected[:5])
+        )
+    trainable_count = sum(parameter.numel() for _, parameter in trainable)
+    total_count = sum(parameter.numel() for _, parameter in parameters)
+    print(
+        f"Trainable LoRA parameters: {trainable_count:,} / {total_count:,} "
+        f"({100 * trainable_count / total_count:.4f}%)"
+    )
+
+
 def run_training() -> None:
     """Run the GRPO reward-variance smoke test on Modal."""
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu", default=DEFAULT_GPU)
     parser.add_argument("--run-name", default="")
+    parser.add_argument(
+        "--adapter-run",
+        required=True,
+        help="Completed SFT run used to initialize GRPO.",
+    )
     parser.add_argument("--num-generations", type=int, default=DEFAULT_NUM_GENERATIONS)
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     parser.add_argument("--max-steps", type=int, default=-1)
@@ -94,6 +120,7 @@ def run_training() -> None:
     )
     try:
         validate_run_name(run_name)
+        validate_run_name(args.adapter_run)
     except ValueError as error:
         parser.error(str(error))
 
@@ -130,7 +157,11 @@ def run_training() -> None:
         timeout=24 * 60 * 60,
     )
     def train(
-        run_name: str, num_generations: int, temperature: float, max_steps: int
+        run_name: str,
+        adapter_run: str,
+        num_generations: int,
+        temperature: float,
+        max_steps: int,
     ) -> str:
         import sys
 
@@ -141,9 +172,7 @@ def run_training() -> None:
             revision="f2651e776f66069cdcf842840db637583def1223",
             allow_patterns="build/torch211-cxx11-cu130-x86_64-linux/*",
         )
-        sys.path.insert(
-            0, f"{kernel_snapshot}/build/torch211-cxx11-cu130-x86_64-linux"
-        )
+        sys.path.insert(0, f"{kernel_snapshot}/build/torch211-cxx11-cu130-x86_64-linux")
 
         # Unsloth must patch Transformers and TRL before they are imported.
         from unsloth import FastLanguageModel, PatchFastRL
@@ -165,8 +194,12 @@ def run_training() -> None:
             raise FileExistsError(f"Completed run already exists: {run_dir}")
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
+        sft_adapter_dir = Path(TRAINING_DIR) / adapter_run / "adapter"
+        if not (sft_adapter_dir / "adapter_config.json").is_file():
+            raise FileNotFoundError(f"SFT adapter does not exist: {sft_adapter_dir}")
+
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name=MODEL_NAME,
+            model_name=str(sft_adapter_dir),
             max_seq_length=MAX_LENGTH,
             load_in_4bit=False,
             load_in_16bit=True,
@@ -177,26 +210,7 @@ def run_training() -> None:
         if not modeling_qwen3_5.is_fast_path_available:
             raise RuntimeError("Qwen3.5 optimized kernel path is unavailable")
         print("Qwen3.5 optimized kernel path is active")
-        model = FastLanguageModel.get_peft_model(
-            model,
-            finetune_vision_layers=False,
-            r=16,
-            target_modules=[
-                "q_proj",
-                "k_proj",
-                "v_proj",
-                "o_proj",
-                "gate_proj",
-                "up_proj",
-                "down_proj",
-            ],
-            lora_alpha=16,
-            lora_dropout=0,
-            bias="none",
-            use_gradient_checkpointing="unsloth",
-            random_state=SEED,
-            max_seq_length=MAX_LENGTH,
-        )
+        validate_trainable_lora_parameters(model)
         train_rows = to_prompt_rows(source_rows, tokenizer)
         train_dataset = Dataset.from_list(train_rows)
 
@@ -217,6 +231,7 @@ def run_training() -> None:
             max_completion_length=1024,
             max_steps=max_steps,
             num_train_epochs=1,
+            mask_truncated_completions=True,
             bf16=True,
             seed=SEED,
             temperature=temperature,
@@ -245,7 +260,11 @@ def run_training() -> None:
     print(f"Starting {run_name} on {args.gpu}")
     with modal.enable_output(), app.run(detach=args.detach):
         call = train.with_options(gpu=args.gpu).spawn(
-            run_name, args.num_generations, args.temperature, args.max_steps
+            run_name,
+            args.adapter_run,
+            args.num_generations,
+            args.temperature,
+            args.max_steps,
         )
         print(f"Monitor training at {call.get_dashboard_url()}")
         print(f"Saved reward report to {call.get()}")
