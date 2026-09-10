@@ -1,0 +1,1921 @@
+{
+  "prompt_count": 100,
+  "scored_count": 100,
+  "failed_count": 0,
+  "invalid_count": 0,
+  "invalid_reasons": {},
+  "score_means": {
+    "average_sentence_length": 11.149152744997137,
+    "controlled_vocabulary": 0.558817154656806,
+    "document_limits": 0.8944563492063492,
+    "long_sentence_fraction": 0.04220657161590419,
+    "procedure_syntax": 0.9973877015069018,
+    "sentence_mechanics": 0.9978663446054751,
+    "terminology_consistency": 0.735,
+    "verb_forms_and_modals": 0.9603000454117818
+  },
+  "domain_score_means": {
+    "API": {
+      "average_sentence_length": 10.130248191723183,
+      "controlled_vocabulary": 0.5867763453560281,
+      "document_limits": 1.0,
+      "long_sentence_fraction": 0.036636665829264656,
+      "procedure_syntax": 0.9857962697274032,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.7,
+      "verb_forms_and_modals": 0.9868232173506007
+    },
+    "ARC": {
+      "average_sentence_length": 9.957110739502044,
+      "controlled_vocabulary": 0.5291262594776155,
+      "document_limits": 1.0,
+      "long_sentence_fraction": 0.017063492063492062,
+      "procedure_syntax": 0.9964285714285714,
+      "sentence_mechanics": 0.9978260869565218,
+      "terminology_consistency": 0.7,
+      "verb_forms_and_modals": 0.9154512395816744
+    },
+    "CLD": {
+      "average_sentence_length": 11.833324381187081,
+      "controlled_vocabulary": 0.5462688830645811,
+      "document_limits": 0.9277777777777778,
+      "long_sentence_fraction": 0.028405797101449276,
+      "procedure_syntax": 0.9956521739130435,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.65,
+      "verb_forms_and_modals": 0.9573664596273292
+    },
+    "DBS": {
+      "average_sentence_length": 13.296908924408925,
+      "controlled_vocabulary": 0.6041086919736744,
+      "document_limits": 0.9,
+      "long_sentence_fraction": 0.047817460317460314,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 0.9888888888888889,
+      "terminology_consistency": 0.85,
+      "verb_forms_and_modals": 0.947936507936508
+    },
+    "DEV": {
+      "average_sentence_length": 10.859070693590617,
+      "controlled_vocabulary": 0.5472924172792871,
+      "document_limits": 1.0,
+      "long_sentence_fraction": 0.046453546453546456,
+      "procedure_syntax": 0.996,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.65,
+      "verb_forms_and_modals": 0.964642325416519
+    },
+    "DST": {
+      "average_sentence_length": 12.283678149336044,
+      "controlled_vocabulary": 0.5767591170397641,
+      "document_limits": 0.8,
+      "long_sentence_fraction": 0.024379129642287535,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.7,
+      "verb_forms_and_modals": 0.9502546576230787
+    },
+    "ML": {
+      "average_sentence_length": 11.58234994332181,
+      "controlled_vocabulary": 0.5324912234767096,
+      "document_limits": 0.9857142857142858,
+      "long_sentence_fraction": 0.0586615515771526,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 0.9956521739130435,
+      "terminology_consistency": 0.9,
+      "verb_forms_and_modals": 0.9450937766410912
+    },
+    "NET": {
+      "average_sentence_length": 9.442390515493491,
+      "controlled_vocabulary": 0.5269944901294593,
+      "document_limits": 0.7233333333333334,
+      "long_sentence_fraction": 0.0,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.7,
+      "verb_forms_and_modals": 0.9803890160183066
+    },
+    "PLR": {
+      "average_sentence_length": 9.46849727189756,
+      "controlled_vocabulary": 0.575765968610222,
+      "document_limits": 0.8285714285714285,
+      "long_sentence_fraction": 0.028632478632478635,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 1.0,
+      "terminology_consistency": 0.75,
+      "verb_forms_and_modals": 0.9854545454545455
+    },
+    "SEC": {
+      "average_sentence_length": 12.63794863951061,
+      "controlled_vocabulary": 0.5625881501607194,
+      "document_limits": 0.7791666666666667,
+      "long_sentence_fraction": 0.13401559454191034,
+      "procedure_syntax": 1.0,
+      "sentence_mechanics": 0.9962962962962963,
+      "terminology_consistency": 0.75,
+      "verb_forms_and_modals": 0.9695887084681651
+    }
+  },
+  "results": [
+    {
+      "id": "NET-01",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 4.425925925925926,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4895397489539749,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "NET-02",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.736842105263158,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5392156862745099,
+        "verb_forms_and_modals": 0.9473684210526316,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 0.8333333333333334
+      }
+    },
+    {
+      "id": "NET-03",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.23076923076923,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5413533834586466,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-04",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 5.2,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5769230769230769,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "NET-05",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.47101449275362317,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-06",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5423728813559322,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-07",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.956521739130435,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.645631067961165,
+        "verb_forms_and_modals": 0.9565217391304348,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-08",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.0,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5277777777777778,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-09",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.153846153846153,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4810606060606061,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "NET-10",
+      "domain": "NET",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.12,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4550561797752809,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 0.4
+      }
+    },
+    {
+      "id": "ML-01",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.333333333333334,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4558823529411765,
+        "verb_forms_and_modals": 0.9166666666666666,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-02",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 17.666666666666668,
+        "long_sentence_fraction": 0.26666666666666666,
+        "controlled_vocabulary": 0.5584905660377358,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-03",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.714285714285714,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5533333333333333,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-04",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.304347826086957,
+        "long_sentence_fraction": 0.043478260869565216,
+        "controlled_vocabulary": 0.42692307692307696,
+        "verb_forms_and_modals": 0.9130434782608696,
+        "sentence_mechanics": 0.9565217391304348,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.8571428571428572
+      }
+    },
+    {
+      "id": "ML-05",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.666666666666667,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5217391304347826,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-06",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.058823529411764,
+        "long_sentence_fraction": 0.17647058823529413,
+        "controlled_vocabulary": 0.5170731707317073,
+        "verb_forms_and_modals": 0.7647058823529411,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-07",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.1,
+        "long_sentence_fraction": 0.1,
+        "controlled_vocabulary": 0.5675675675675675,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-08",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.166666666666666,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6164383561643836,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-09",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.76923076923077,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5551181102362205,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ML-10",
+      "domain": "ML",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.043478260869565,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.552346570397112,
+        "verb_forms_and_modals": 0.9565217391304348,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-01",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.235294117647058,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5714285714285714,
+        "verb_forms_and_modals": 0.9411764705882353,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 0.8823529411764706,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-02",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.923076923076923,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.44660194174757284,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-03",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.333333333333334,
+        "long_sentence_fraction": 0.047619047619047616,
+        "controlled_vocabulary": 0.7050691244239631,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-04",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 14.1,
+        "long_sentence_fraction": 0.1,
+        "controlled_vocabulary": 0.524822695035461,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-05",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.090909090909092,
+        "long_sentence_fraction": 0.09090909090909091,
+        "controlled_vocabulary": 0.631578947368421,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-06",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.846153846153847,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5292207792207793,
+        "verb_forms_and_modals": 0.9615384615384616,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-07",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.414634146341463,
+        "long_sentence_fraction": 0.024390243902439025,
+        "controlled_vocabulary": 0.5391304347826087,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 0.975609756097561,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-08",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.666666666666667,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.7608695652173914,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-09",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.172413793103448,
+        "long_sentence_fraction": 0.10344827586206896,
+        "controlled_vocabulary": 0.6296296296296297,
+        "verb_forms_and_modals": 0.9655172413793104,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "API-10",
+      "domain": "API",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.52,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5294117647058824,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-01",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.5,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5739130434782609,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "DBS-02",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.875,
+        "long_sentence_fraction": 0.041666666666666664,
+        "controlled_vocabulary": 0.5954692556634305,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-03",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 36.0,
+        "long_sentence_fraction": 0.2222222222222222,
+        "controlled_vocabulary": 0.617283950617284,
+        "verb_forms_and_modals": 0.8888888888888888,
+        "sentence_mechanics": 0.8888888888888888,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-04",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 6.181818181818182,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6176470588235294,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-05",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 18.166666666666668,
+        "long_sentence_fraction": 0.16666666666666666,
+        "controlled_vocabulary": 0.6146788990825688,
+        "verb_forms_and_modals": 0.8333333333333334,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-06",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.214285714285714,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6594594594594594,
+        "verb_forms_and_modals": 0.9285714285714286,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-07",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.35,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6054421768707483,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-08",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.0,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.7142857142857143,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-09",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.538461538461538,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5685483870967742,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DBS-10",
+      "domain": "DBS",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.142857142857142,
+        "long_sentence_fraction": 0.047619047619047616,
+        "controlled_vocabulary": 0.47435897435897434,
+        "verb_forms_and_modals": 0.9285714285714286,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-01",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5462962962962963,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "DST-02",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 14.285714285714286,
+        "long_sentence_fraction": 0.047619047619047616,
+        "controlled_vocabulary": 0.5933333333333333,
+        "verb_forms_and_modals": 0.9523809523809523,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-03",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5612244897959184,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "DST-04",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.875,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5765765765765766,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-05",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.285714285714286,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6835443037974683,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-06",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 16.11111111111111,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6275862068965516,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-07",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.454545454545455,
+        "long_sentence_fraction": 0.09090909090909091,
+        "controlled_vocabulary": 0.5912408759124088,
+        "verb_forms_and_modals": 0.8181818181818181,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-08",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.263157894736842,
+        "long_sentence_fraction": 0.10526315789473684,
+        "controlled_vocabulary": 0.5277777777777778,
+        "verb_forms_and_modals": 0.9473684210526316,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-09",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.0,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5580808080808081,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DST-10",
+      "domain": "DST",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.961538461538462,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5019305019305019,
+        "verb_forms_and_modals": 0.8846153846153846,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-01",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.2,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6195652173913043,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-02",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.741935483870968,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.695054945054945,
+        "verb_forms_and_modals": 0.967741935483871,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-03",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 14.947368421052632,
+        "long_sentence_fraction": 0.21052631578947367,
+        "controlled_vocabulary": 0.5880281690140845,
+        "verb_forms_and_modals": 0.8421052631578947,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-04",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 14.222222222222221,
+        "long_sentence_fraction": 0.18518518518518517,
+        "controlled_vocabulary": 0.5494791666666667,
+        "verb_forms_and_modals": 0.962962962962963,
+        "sentence_mechanics": 0.962962962962963,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.9166666666666666
+      }
+    },
+    {
+      "id": "SEC-05",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.5,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5529411764705883,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "SEC-06",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.153846153846153,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5126050420168067,
+        "verb_forms_and_modals": 0.9230769230769231,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "SEC-07",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.722222222222221,
+        "long_sentence_fraction": 0.1111111111111111,
+        "controlled_vocabulary": 0.5213270142180095,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-08",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.833333333333334,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5094339622641509,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "SEC-09",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.891891891891891,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5288753799392097,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 0.875
+      }
+    },
+    {
+      "id": "SEC-10",
+      "domain": "SEC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 29.166666666666668,
+        "long_sentence_fraction": 0.8333333333333334,
+        "controlled_vocabulary": 0.5485714285714286,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-01",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.12,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.550561797752809,
+        "verb_forms_and_modals": 0.96,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-02",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.428571428571429,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5517241379310345,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-03",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.6,
+        "long_sentence_fraction": 0.06666666666666667,
+        "controlled_vocabulary": 0.5919540229885057,
+        "verb_forms_and_modals": 0.8,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.5
+      }
+    },
+    {
+      "id": "CLD-04",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 14.583333333333334,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5257142857142857,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-05",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.35,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5859030837004405,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-06",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.68421052631579,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5601659751037344,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-07",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.391304347826088,
+        "long_sentence_fraction": 0.21739130434782608,
+        "controlled_vocabulary": 0.4967532467532467,
+        "verb_forms_and_modals": 0.9565217391304348,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 0.9565217391304348,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-08",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 16.666666666666668,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "CLD-09",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.794871794871795,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.506578947368421,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 0.7777777777777778
+      }
+    },
+    {
+      "id": "CLD-10",
+      "domain": "CLD",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.714285714285714,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4933333333333333,
+        "verb_forms_and_modals": 0.8571428571428572,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-01",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.272727272727273,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5846774193548387,
+        "verb_forms_and_modals": 0.9545454545454546,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-02",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.555555555555555,
+        "long_sentence_fraction": 0.05555555555555555,
+        "controlled_vocabulary": 0.48557692307692313,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-03",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 5.0588235294117645,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6162790697674418,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-04",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.880952380952381,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4894259818731118,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-05",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6666666666666667,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-06",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.1,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6534653465346535,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 0.0
+      }
+    },
+    {
+      "id": "PLR-07",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.136363636363637,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5174129353233831,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-08",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.666666666666666,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6153846153846154,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "PLR-09",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.829268292682927,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4641744548286605,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 0.2857142857142857
+      }
+    },
+    {
+      "id": "PLR-10",
+      "domain": "PLR",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.384615384615385,
+        "long_sentence_fraction": 0.23076923076923078,
+        "controlled_vocabulary": 0.6645962732919255,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-01",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.545454545454545,
+        "long_sentence_fraction": 0.09090909090909091,
+        "controlled_vocabulary": 0.5100671140939597,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-02",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.03225806451613,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5341365461847389,
+        "verb_forms_and_modals": 0.967741935483871,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-03",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 16.285714285714285,
+        "long_sentence_fraction": 0.14285714285714285,
+        "controlled_vocabulary": 0.5701754385964912,
+        "verb_forms_and_modals": 0.8571428571428572,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-04",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.6,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4418604651162791,
+        "verb_forms_and_modals": 0.9,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-05",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.666666666666666,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5625,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-06",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.61111111111111,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5863874345549738,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-07",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.52,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5882352941176471,
+        "verb_forms_and_modals": 0.96,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 0.96,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-08",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.294117647058824,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5316455696202531,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-09",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.92,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5291479820627802,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "DEV-10",
+      "domain": "DEV",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.115384615384615,
+        "long_sentence_fraction": 0.23076923076923078,
+        "controlled_vocabulary": 0.6187683284457478,
+        "verb_forms_and_modals": 0.9615384615384616,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-01",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 13.8,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.6086956521739131,
+        "verb_forms_and_modals": 0.4,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-02",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 9.0,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.4814814814814815,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-03",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.653846153846153,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.3993399339933993,
+        "verb_forms_and_modals": 0.9230769230769231,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-04",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.133333333333333,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5573770491803278,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-05",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 8.472222222222221,
+        "long_sentence_fraction": 0.027777777777777776,
+        "controlled_vocabulary": 0.5901639344262295,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-06",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 10.416666666666666,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5720000000000001,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-07",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.076923076923077,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5579710144927537,
+        "verb_forms_and_modals": 1.0,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-08",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 7.934782608695652,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.5123287671232877,
+        "verb_forms_and_modals": 0.9782608695652174,
+        "sentence_mechanics": 0.9782608695652174,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 0.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-09",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 11.083333333333334,
+        "long_sentence_fraction": 0.0,
+        "controlled_vocabulary": 0.47619047619047616,
+        "verb_forms_and_modals": 0.8888888888888888,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 1.0,
+        "terminology_consistency": 1.0,
+        "document_limits": 1.0
+      }
+    },
+    {
+      "id": "ARC-10",
+      "domain": "ARC",
+      "validity": {
+        "valid": true,
+        "reasons": []
+      },
+      "scores": {
+        "average_sentence_length": 12.0,
+        "long_sentence_fraction": 0.14285714285714285,
+        "controlled_vocabulary": 0.5357142857142857,
+        "verb_forms_and_modals": 0.9642857142857143,
+        "sentence_mechanics": 1.0,
+        "procedure_syntax": 0.9642857142857143,
+        "terminology_consistency": 0.5,
+        "document_limits": 1.0
+      }
+    }
+  ]
+}

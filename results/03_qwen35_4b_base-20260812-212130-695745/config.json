@@ -1,0 +1,26 @@
+{
+  "model": "Qwen/Qwen3.5-4B",
+  "condition": "base_raw",
+  "system_prompt": null,
+  "system_prompt_source": null,
+  "eval_sha256": "5b286a60dd0c9df0e272f8b707a170f8d6b21aa1e609add0f0be5a0665bc695f",
+  "prompt_count": 100,
+  "seed": 42,
+  "enable_thinking": false,
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens": 2048
+  },
+  "git": {
+    "commit": "9a33d243afe3baf5e237427dc73bfa80bdf10e85",
+    "dirty": true
+  },
+  "gpu_requested": "L4",
+  "backend": "modal",
+  "device": "cuda",
+  "gpu_actual": "NVIDIA L4",
+  "gpu_memory_gib": 22.0343017578125,
+  "model_revision": null,
+  "torch_dtype": "torch.bfloat16",
+  "model_load_seconds": 10.580184852999999
+}
