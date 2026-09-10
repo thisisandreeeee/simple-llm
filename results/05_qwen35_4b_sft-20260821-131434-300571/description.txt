@@ -1,0 +1,5 @@
+- Qwen3.5-4B (Fine-Tuned)
+- 1000 records SFT dataset
+- No prompt engineering
+- Stochastic decoding
+- Reduce scale to 0.25

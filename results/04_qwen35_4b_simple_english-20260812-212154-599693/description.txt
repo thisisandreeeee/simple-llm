@@ -1,0 +1,3 @@
+- Qwen3.5-4B (Instruction Tuned)
+- Use simple english system prompt
+- Greedy decoding

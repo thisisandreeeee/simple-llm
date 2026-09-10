@@ -1,0 +1,39 @@
+{
+  "model": "Qwen/Qwen3.5-4B",
+  "condition": "sft_lora_merged",
+  "system_prompt": null,
+  "system_prompt_source": null,
+  "eval_sha256": "5b286a60dd0c9df0e272f8b707a170f8d6b21aa1e609add0f0be5a0665bc695f",
+  "prompt_count": 100,
+  "seed": 42,
+  "enable_thinking": false,
+  "generation": {
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_new_tokens": 2048
+  },
+  "backend": "modal",
+  "git": {
+    "commit": "45c3f7b324de5643aa4bea35a76f6c437d7108a4",
+    "dirty": false
+  },
+  "gpu_requested": "L4",
+  "device": "cuda",
+  "gpu_actual": "NVIDIA L4",
+  "gpu_memory_gib": 22.0343017578125,
+  "model_class": "Qwen3_5ForConditionalGeneration",
+  "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "torch_dtype": "torch.bfloat16",
+  "model_load_seconds": 9.880658174999999,
+  "adapter": {
+    "run": "qwen35-4b-sft-20260821-025306",
+    "path": "/training/qwen35-4b-sft-20260821-025306/adapter",
+    "base_model_class": "Qwen3_5ForConditionalGeneration",
+    "scale": 0.25,
+    "scaled_layer_count": 128,
+    "validated": true,
+    "merged": true
+  }
+}
