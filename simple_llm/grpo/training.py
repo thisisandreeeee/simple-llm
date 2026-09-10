@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import statistics
-from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -25,8 +23,10 @@ from simple_llm.sft.training import load_dataset_rows
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_TRAIN_DATASET_PATH = DATA_DIR / "sft_train.jsonl"
+DEFAULT_EVAL_DATASET_PATH = DATA_DIR / "sft_eval.jsonl"
 APPROVED_WORDS_PATH = DATA_DIR / "ste_approved_words.txt"
 REMOTE_TRAIN_DATASET = "/workspace/sft_train.jsonl"
+REMOTE_EVAL_DATASET = "/workspace/sft_eval.jsonl"
 MODEL_NAME = "Qwen/Qwen3.5-4B"
 SEED = 42
 MAX_LENGTH = 2048
@@ -139,6 +139,7 @@ def run_training() -> None:
         ),
         (
             (DEFAULT_TRAIN_DATASET_PATH, REMOTE_TRAIN_DATASET),
+            (DEFAULT_EVAL_DATASET_PATH, REMOTE_EVAL_DATASET),
             (APPROVED_WORDS_PATH, "/root/data/ste_approved_words.txt"),
         ),
     )
@@ -178,13 +179,13 @@ def run_training() -> None:
         from unsloth import FastLanguageModel, PatchFastRL
 
         PatchFastRL("GRPO", FastLanguageModel)
-        import torch
         from datasets import Dataset
         from transformers.trainer_utils import get_last_checkpoint
         from trl import GRPOConfig, GRPOTrainer
 
-        source_rows = load_dataset_rows(Path(REMOTE_TRAIN_DATASET))
-        if not source_rows:
+        train_source_rows = load_dataset_rows(Path(REMOTE_TRAIN_DATASET))
+        eval_source_rows = load_dataset_rows(Path(REMOTE_EVAL_DATASET))
+        if not train_source_rows:
             raise ValueError("No GRPO prompts are available for the smoke test")
         run_dir = Path(TRAINING_DIR) / run_name
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -211,8 +212,10 @@ def run_training() -> None:
             raise RuntimeError("Qwen3.5 optimized kernel path is unavailable")
         print("Qwen3.5 optimized kernel path is active")
         validate_trainable_lora_parameters(model)
-        train_rows = to_prompt_rows(source_rows, tokenizer)
+        train_rows = to_prompt_rows(train_source_rows, tokenizer)
+        eval_rows = to_prompt_rows(eval_source_rows, tokenizer)
         train_dataset = Dataset.from_list(train_rows)
+        eval_dataset = Dataset.from_list(eval_rows)
 
         training_args = GRPOConfig(
             learning_rate=5e-6,
@@ -225,6 +228,7 @@ def run_training() -> None:
             logging_steps=1,
             log_completions=False,
             per_device_train_batch_size=1,
+            per_device_eval_batch_size=num_generations,
             gradient_accumulation_steps=4,
             num_generations=num_generations,  # Decrease if out of memory
             max_prompt_length=512,
@@ -232,6 +236,8 @@ def run_training() -> None:
             max_steps=max_steps,
             num_train_epochs=1,
             mask_truncated_completions=True,
+            eval_strategy="steps",
+            eval_steps=300,
             bf16=True,
             seed=SEED,
             temperature=temperature,
@@ -246,6 +252,7 @@ def run_training() -> None:
             processing_class=tokenizer,
             reward_funcs=reward_func,
             train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
             args=training_args,
         )
         checkpoint = get_last_checkpoint(str(checkpoint_dir))
