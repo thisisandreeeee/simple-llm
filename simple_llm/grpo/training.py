@@ -74,10 +74,13 @@ def make_reward_funcs(reward_function: str = DEFAULT_REWARD_FUNCTION):
     def simplicity(prompts, completions, **kwargs):
         return [score["simplicity"] for score in scores_for(prompts, completions)]
 
+    def clarity(prompts, completions, **kwargs):
+        return [score["clarity"] for score in scores_for(prompts, completions)]
+
     def asd_ste100(prompts, completions, **kwargs):
         return [score["asd_ste100"] for score in scores_for(prompts, completions)]
 
-    return [combined, correctness, simplicity, asd_ste100]
+    return [combined, correctness, simplicity, clarity, asd_ste100]
 
 
 def make_prompt_id(row_number: int, prompt: str) -> str:

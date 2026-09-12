@@ -22,11 +22,13 @@ def test_reward_func_batches_completions_in_one_judge_call(monkeypatch):
                                     "0": {
                                         "correctness": 1.0,
                                         "simplicity": 0.8,
+                                        "clarity": 0.9,
                                         "asd_ste100": 0.6,
                                     },
                                     "1": {
                                         "correctness": 0.5,
                                         "simplicity": 1.0,
+                                        "clarity": 0.8,
                                         "asd_ste100": 1.0,
                                     },
                                 }
@@ -127,8 +129,8 @@ def test_style_normalization_does_not_amplify_tiny_differences():
 def test_judge_retries_non_discrete_correctness_score():
     contents = iter(
         [
-            '{"0":{"correctness":0.8,"simplicity":1,"asd_ste100":1}}',
-            '{"0":{"correctness":0.75,"simplicity":1,"asd_ste100":1}}',
+            '{"0":{"correctness":0.8,"simplicity":1,"clarity":1,"asd_ste100":1}}',
+            '{"0":{"correctness":0.75,"simplicity":1,"clarity":1,"asd_ste100":1}}',
         ]
     )
 

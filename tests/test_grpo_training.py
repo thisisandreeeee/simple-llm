@@ -132,8 +132,8 @@ def test_reward_funcs_expose_components_with_one_judge_call(
     monkeypatch, reward_function, expected
 ):
     scores = [
-        {"correctness": 0.5, "simplicity": 1.0, "asd_ste100": 0.8},
-        {"correctness": 1.0, "simplicity": 0.5, "asd_ste100": 0.6},
+        {"correctness": 0.5, "simplicity": 1.0, "clarity": 0.9, "asd_ste100": 0.8},
+        {"correctness": 1.0, "simplicity": 0.5, "clarity": 0.7, "asd_ste100": 0.6},
     ]
     calls = []
 
@@ -155,11 +155,13 @@ def test_reward_funcs_expose_components_with_one_judge_call(
     assert results[0] == pytest.approx(expected)
     assert results[1] == pytest.approx([0.5, 1.0])
     assert results[2] == pytest.approx([1.0, 0.5])
-    assert results[3] == pytest.approx([0.8, 0.6])
+    assert results[3] == pytest.approx([0.9, 0.7])
+    assert results[4] == pytest.approx([0.8, 0.6])
     assert [reward_func.__name__ for reward_func in reward_funcs] == [
         "combined",
         "correctness",
         "simplicity",
+        "clarity",
         "asd_ste100",
     ]
     assert len(calls) == 1
