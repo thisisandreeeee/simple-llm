@@ -11,6 +11,7 @@ from typing import Any
 import modal
 
 from simple_llm.grpo.rewards import (
+    gated_rewards,
     multiplicative_rewards,
     relative_rewards,
     score_completions,
@@ -41,6 +42,7 @@ DEFAULT_REWARD_FUNCTION = "multiplicative"
 REWARD_FUNCTIONS = {
     "multiplicative": multiplicative_rewards,
     "relative": relative_rewards,
+    "gated": gated_rewards,
 }
 
 
