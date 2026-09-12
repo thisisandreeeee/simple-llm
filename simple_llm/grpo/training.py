@@ -10,7 +10,11 @@ from typing import Any
 
 import modal
 
-from simple_llm.grpo.rewards import reward_func
+from simple_llm.grpo.rewards import (
+    multiplicative_rewards,
+    relative_rewards,
+    score_completions,
+)
 from simple_llm.modal import (
     HF_CACHE_DIR,
     TRAINING_DIR,
@@ -33,6 +37,45 @@ MAX_LENGTH = 2048
 DEFAULT_GPU = "L4"
 DEFAULT_NUM_GENERATIONS = 4
 DEFAULT_TEMPERATURE = 0.9
+DEFAULT_REWARD_FUNCTION = "multiplicative"
+REWARD_FUNCTIONS = {
+    "multiplicative": multiplicative_rewards,
+    "relative": relative_rewards,
+}
+
+
+def make_reward_funcs(reward_function: str = DEFAULT_REWARD_FUNCTION):
+    """Build one training reward plus zero-weight diagnostics for TRL logging."""
+
+    try:
+        combine_scores = REWARD_FUNCTIONS[reward_function]
+    except KeyError as error:
+        raise ValueError(f"Unknown reward function: {reward_function}") from error
+
+    cached_key = None
+    cached_scores = None
+
+    def scores_for(prompts, completions):
+        nonlocal cached_key, cached_scores
+        key = (tuple(prompts), tuple(completions))
+        if key != cached_key:
+            cached_key = key
+            cached_scores = score_completions(prompts, completions)
+        return cached_scores
+
+    def combined(prompts, completions, **kwargs):
+        return combine_scores(prompts, scores_for(prompts, completions))
+
+    def correctness(prompts, completions, **kwargs):
+        return [score["correctness"] for score in scores_for(prompts, completions)]
+
+    def simplicity(prompts, completions, **kwargs):
+        return [score["simplicity"] for score in scores_for(prompts, completions)]
+
+    def asd_ste100(prompts, completions, **kwargs):
+        return [score["asd_ste100"] for score in scores_for(prompts, completions)]
+
+    return [combined, correctness, simplicity, asd_ste100]
 
 
 def make_prompt_id(row_number: int, prompt: str) -> str:
@@ -103,6 +146,11 @@ def run_training() -> None:
     )
     parser.add_argument("--num-generations", type=int, default=DEFAULT_NUM_GENERATIONS)
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
+    parser.add_argument(
+        "--reward-function",
+        choices=REWARD_FUNCTIONS,
+        default=DEFAULT_REWARD_FUNCTION,
+    )
     parser.add_argument("--max-steps", type=int, default=-1)
     parser.add_argument(
         "--detach", action="store_true", help="Keep the Modal app running on exit."
@@ -162,6 +210,7 @@ def run_training() -> None:
         adapter_run: str,
         num_generations: int,
         temperature: float,
+        reward_function: str,
         max_steps: int,
     ) -> str:
         import sys
@@ -216,6 +265,7 @@ def run_training() -> None:
         eval_rows = to_prompt_rows(eval_source_rows, tokenizer)
         train_dataset = Dataset.from_list(train_rows)
         eval_dataset = Dataset.from_list(eval_rows)
+        reward_funcs = make_reward_funcs(reward_function)
 
         training_args = GRPOConfig(
             learning_rate=5e-6,
@@ -236,11 +286,11 @@ def run_training() -> None:
             max_steps=max_steps,
             num_train_epochs=1,
             mask_truncated_completions=True,
-            eval_strategy="steps",
-            eval_steps=300,
+            eval_strategy="epoch",
             bf16=True,
             seed=SEED,
             temperature=temperature,
+            reward_weights=[1.0] + [0.0] * (len(reward_funcs) - 1),
             report_to="tensorboard",
             output_dir=str(checkpoint_dir),
             remove_unused_columns=False,
@@ -250,7 +300,7 @@ def run_training() -> None:
         trainer = GRPOTrainer(
             model=model,
             processing_class=tokenizer,
-            reward_funcs=reward_func,
+            reward_funcs=reward_funcs,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             args=training_args,
@@ -271,6 +321,7 @@ def run_training() -> None:
             args.adapter_run,
             args.num_generations,
             args.temperature,
+            args.reward_function,
             args.max_steps,
         )
         print(f"Monitor training at {call.get_dashboard_url()}")
