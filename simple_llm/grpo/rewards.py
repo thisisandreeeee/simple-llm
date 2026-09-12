@@ -8,8 +8,11 @@ from openai import OpenAI
 MODEL = "deepseek-v4-pro"
 SIMPLICITY_COEFF = 0.15
 ASD_COEFF = 0.15
+STYLE_BONUS = 0.24
+MIN_STYLE_SPREAD = 0.25
 JUDGE_RETRIES = 1
 SCORE_FIELDS = {"correctness", "simplicity", "asd_ste100"}
+CORRECTNESS_GRADES = {0.0, 0.25, 0.5, 0.75, 1.0}
 JUDGE_PROMPT = """You are an evaluator. Judge whether the assistant response is **correct**, **simple**, and compliant with **ASD-STE100-style technical English** for the user request. You will be given a list of (user, assistant) pairs to be scored while preserving the identifiers.
 
 ## 1. Correctness
@@ -27,7 +30,9 @@ JUDGE_PROMPT = """You are an evaluator. Judge whether the assistant response is 
 Score correctness from 0.0 to 1.0:
 
 - 0.0: materially wrong, irrelevant, fabricated, or fails the task.
+- 0.25: mostly wrong, but contains a small amount of useful correct content.
 - 0.5: partially correct or useful, but has meaningful errors, omissions, or task-fulfillment issues.
+- 0.75: mostly correct and useful, with only minor errors or omissions.
 - 1.0: fully correct, technically adequate, grounded, and fulfills the requested task, scope, audience, and format.
 
 ## 2. Simplicity
@@ -82,7 +87,7 @@ Return only valid JSON in this format:
         "asd_ste100": 0.3
     },
     "1": {
-        "correctness": 0.6,
+        "correctness": 0.75,
         "simplicity": 0.7,
         "asd_ste100": 0.2
     },
@@ -90,7 +95,8 @@ Return only valid JSON in this format:
 }
 ```
 
-Scores may take any value from 0.0 to 1.0.
+Correctness must be exactly 0.0, 0.25, 0.5, 0.75, or 1.0. Simplicity and
+ASD-STE100 scores may take any value from 0.0 to 1.0.
 """
 
 
@@ -133,6 +139,8 @@ def judge_scores(client, user_message, expected_count):
                     for value in score.values()
                 ):
                     raise ValueError(f"invalid value for score ID {score_id}")
+                if score["correctness"] not in CORRECTNESS_GRADES:
+                    raise ValueError(f"invalid correctness grade for score ID {score_id}")
             return scores
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
             if attempt == JUDGE_RETRIES:
@@ -147,27 +155,77 @@ def judge_scores(client, user_message, expected_count):
 
 
 def reward_func(prompts, completions, **kwargs) -> list[float]:
+    """Score completions with the original multiplicative reward."""
+
+    scores = score_completions(prompts, completions)
+    return multiplicative_rewards(prompts, scores)
+
+
+def score_completions(prompts, completions) -> list[dict[str, float]]:
+    """Return the judge's component scores for each completion."""
+
     if len(prompts) != len(completions):
         raise ValueError("prompts and completions must have equal lengths")
 
     client = create_deepseek_client()
-    alpha = 1.0 - SIMPLICITY_COEFF - ASD_COEFF
-    if alpha <= 0:
-        raise ValueError("alpha cannot be less than zero")
-
     user_message = """Evaluate the assistant response against the user message for each of the following completions."""
     for i, (prompt, completion) in enumerate(zip(prompts, completions, strict=True)):
         user_message += f"\n\nID {i}:\n<User message>{prompt}</User message>\n<Assistant response>{completion}</Assistant response>"
 
-    rewards = []
     scores = judge_scores(client, user_message, len(prompts))
-    for i in range(len(prompts)):
-        score = scores[str(i)]
-        reward = score["correctness"] * (
+    return [scores[str(i)] for i in range(len(prompts))]
+
+
+def multiplicative_rewards(
+    prompts: list[str], scores: list[dict[str, float]]
+) -> list[float]:
+    """Return the original correctness-multiplied reward."""
+
+    if len(prompts) != len(scores):
+        raise ValueError("prompts and scores must have equal lengths")
+    alpha = 1.0 - SIMPLICITY_COEFF - ASD_COEFF
+    return [
+        score["correctness"]
+        * (
             alpha
             + SIMPLICITY_COEFF * score["simplicity"]
             + ASD_COEFF * score["asd_ste100"]
         )
-        rewards.append(reward)
+        for score in scores
+    ]
 
-    return rewards
+
+def relative_rewards(
+    prompts: list[str], scores: list[dict[str, float]]
+) -> list[float]:
+    """Give style its full range without letting it cross correctness grades."""
+
+    if len(prompts) != len(scores):
+        raise ValueError("prompts and scores must have equal lengths")
+
+    groups: dict[str, list[int]] = {}
+    for index, prompt in enumerate(prompts):
+        groups.setdefault(prompt, []).append(index)
+
+    normalized_styles = [0.0] * len(scores)
+    for indices in groups.values():
+        useful = [index for index in indices if scores[index]["correctness"] > 0]
+        styles = [
+            scores[index]["simplicity"] * scores[index]["asd_ste100"]
+            for index in useful
+        ]
+        if not styles or max(styles) == min(styles):
+            continue
+        low = min(styles)
+        spread = max(max(styles) - low, MIN_STYLE_SPREAD)
+        for index, style in zip(useful, styles, strict=True):
+            normalized_styles[index] = (style - low) / spread
+
+    return [
+        (
+            (score["correctness"] + STYLE_BONUS * style) / (1.0 + STYLE_BONUS)
+            if score["correctness"] > 0
+            else 0.0
+        )
+        for score, style in zip(scores, normalized_styles, strict=True)
+    ]
