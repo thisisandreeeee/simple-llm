@@ -16,4 +16,6 @@ if __name__ == "__main__":
         default_backend="modal",
         description=__doc__,
         require_adapter_run=True,
+        presence_penalty=0.5,
+        repetition_penalty=1.05,
     )
