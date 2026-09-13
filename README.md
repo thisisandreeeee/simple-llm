@@ -169,7 +169,22 @@ uvx --from tensorboard tensorboard --logdir ./tensorboard-logs
 
 Then open <http://localhost:6006>.
 
-### 3. Run experiments
+### 3. Train with GRPO from the SFT adapter
+
+Start GRPO from the completed `qwen35-4b-sft-20260821-025306` SFT adapter:
+
+```bash
+uv run python -m simple_llm.grpo.training \
+  --adapter-run qwen35-4b-sft-20260821-025306 \
+  --detach
+```
+
+`--adapter-run` is required. The job loads the adapter from the shared
+`simple-llm-training` Modal Volume and continues training its LoRA parameters;
+it does not merge the adapter into the base model first. Use `--run-name` to
+name the GRPO output run or `--max-steps 1` for a smoke test.
+
+### 4. Run experiments
 
 Run the main 4B baselines on Modal:
 
@@ -178,11 +193,13 @@ uv run python experiments/03_qwen35_4b_base.py
 uv run python experiments/04_qwen35_4b_sysprompt.py
 ```
 
-Evaluate a completed training run's LoRA adapter:
+Evaluate a completed training run's LoRA adapter (scaled to `0.25` by default):
 
 ```bash
 uv run python experiments/05_qwen35_4b_sft.py --adapter-run RUN
 ```
+
+Pass `--adapter-scale 1.0` to evaluate the adapter at full strength.
 
 Experiments 06 and 07 test penalties that reduce repetitive SFT output:
 
@@ -210,7 +227,7 @@ uv run python experiments/01_qwen35_08b_base.py
 uv run python experiments/02_qwen35_08b_sysprompt.py
 ```
 
-### 4. Judge a run
+### 5. Judge a run
 
 After an experiment completes, judge its predictions with up to 50 concurrent
 requests:
@@ -227,7 +244,7 @@ failures are recorded immediately.
 ## Backlog
 
 - [ ] Add DPO data generation and training
-- [ ] Implement RLAIF with GRPO
+- [x] Implement RLAIF with GRPO
 - [ ] Serve inference with vLLM
 
 ## License

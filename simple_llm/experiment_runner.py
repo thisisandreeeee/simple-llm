@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import random
 import subprocess
 import time
@@ -108,6 +109,11 @@ def run_experiment(
             "--adapter-run",
             help="Completed SFT training run whose LoRA adapter to merge.",
         )
+        parser.add_argument(
+            "--adapter-scale",
+            type=float,
+            help="LoRA adapter scale (default: 0.25).",
+        )
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be a positive integer")
@@ -130,8 +136,19 @@ def run_experiment(
             and isinstance(adapter, dict)
         ):
             args.adapter_run = adapter.get("run")
+        if (
+            require_adapter_run
+            and args.adapter_scale is None
+            and isinstance(adapter, dict)
+        ):
+            args.adapter_scale = adapter.get("scale")
     if require_adapter_run and not args.adapter_run:
         parser.error("--adapter-run is required for a new run")
+    if require_adapter_run:
+        if args.adapter_scale is None:
+            args.adapter_scale = 0.25
+        if not math.isfinite(args.adapter_scale) or args.adapter_scale < 0:
+            parser.error("--adapter-scale must be a finite non-negative number")
 
     evals = load_evals()
     if args.limit:
@@ -178,6 +195,8 @@ def run_experiment(
             adapter = previous_config.get("adapter")
             if not isinstance(adapter, dict) or adapter.get("run") != args.adapter_run:
                 mismatches.append("adapter.run")
+            elif adapter.get("scale") != args.adapter_scale:
+                mismatches.append("adapter.scale")
         if mismatches:
             parser.error("resume configuration mismatch: " + ", ".join(mismatches))
 
@@ -190,6 +209,7 @@ def run_experiment(
             args.gpu,
             SEED,
             adapter_run=args.adapter_run if require_adapter_run else None,
+            adapter_scale=args.adapter_scale if require_adapter_run else 0.25,
             presence_penalty=presence_penalty,
             repetition_penalty=repetition_penalty,
         )

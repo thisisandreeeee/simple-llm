@@ -87,6 +87,7 @@ class ModalModel:
     model_name: str = modal.parameter()
     seed: int = modal.parameter()
     adapter_run: str = modal.parameter(default="")
+    adapter_scale: str = modal.parameter(default=str(ADAPTER_SCALE))
     presence_penalty: str = modal.parameter(default="0")
     repetition_penalty: str = modal.parameter(default="0")
 
@@ -123,13 +124,14 @@ class ModalModel:
                     f"Loaded unexpected model class: {loaded_model_class}"
                 )
             self.model = load_peft_adapter(self.model, adapter_path)
-            scaled_layers = scale_peft_adapter(self.model, ADAPTER_SCALE)
+            adapter_scale = float(self.adapter_scale)
+            scaled_layers = scale_peft_adapter(self.model, adapter_scale)
             self.model = self.model.merge_and_unload(safe_merge=True)
             adapter = {
                 "run": self.adapter_run,
                 "path": str(adapter_path),
                 "base_model_class": loaded_model_class,
-                "scale": ADAPTER_SCALE,
+                "scale": adapter_scale,
                 "scaled_layer_count": scaled_layers,
                 "validated": True,
                 "merged": True,
@@ -174,6 +176,7 @@ def modal_generator(
     gpu: str,
     seed: int,
     adapter_run: str | None = None,
+    adapter_scale: float = ADAPTER_SCALE,
     presence_penalty: float | None = None,
     repetition_penalty: float | None = None,
 ) -> Iterator[tuple[Generator, dict[str, Any]]]:
@@ -185,6 +188,7 @@ def modal_generator(
             model_name=model_name,
             seed=seed,
             adapter_run=adapter_run or "",
+            adapter_scale=str(adapter_scale),
             presence_penalty=str(presence_penalty or 0.0),
             repetition_penalty=str(repetition_penalty or 0.0),
         )
