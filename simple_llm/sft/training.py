@@ -11,7 +11,7 @@ from typing import Any
 
 import modal
 
-from simple_llm.modal import (
+from simple_llm.modal_common import (
     HF_CACHE_DIR,
     TRAINING_DIR,
     build_training_image,

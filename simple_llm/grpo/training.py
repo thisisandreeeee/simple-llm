@@ -16,7 +16,7 @@ from simple_llm.grpo.rewards import (
     relative_rewards,
     score_completions,
 )
-from simple_llm.modal import (
+from simple_llm.modal_common import (
     HF_CACHE_DIR,
     TRAINING_DIR,
     build_training_image,
