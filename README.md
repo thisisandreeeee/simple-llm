@@ -193,11 +193,13 @@ uv run python experiments/03_qwen35_4b_base.py
 uv run python experiments/04_qwen35_4b_sysprompt.py
 ```
 
-Evaluate a completed training run's LoRA adapter:
+Evaluate a completed training run's LoRA adapter (scaled to `0.25` by default):
 
 ```bash
 uv run python experiments/05_qwen35_4b_sft.py --adapter-run RUN
 ```
+
+Pass `--adapter-scale 1.0` to evaluate the adapter at full strength.
 
 Experiments 06 and 07 test penalties that reduce repetitive SFT output:
 
@@ -242,7 +244,7 @@ failures are recorded immediately.
 ## Backlog
 
 - [ ] Add DPO data generation and training
-- [ ] Implement RLAIF with GRPO
+- [x] Implement RLAIF with GRPO
 - [ ] Serve inference with vLLM
 
 ## License
