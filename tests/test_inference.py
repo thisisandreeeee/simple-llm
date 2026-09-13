@@ -1,10 +1,13 @@
 import json
+import sys
+from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
 import torch
 from transformers import RepetitionPenaltyLogitsProcessor
 
+from simple_llm import experiment_runner
 from simple_llm.experiment_runner import summarize_inference
 from simple_llm.inference import (
     PresencePenaltyLogitsProcessor,
@@ -12,6 +15,42 @@ from simple_llm.inference import (
     generate_predictions,
 )
 from simple_llm.scoring.rule_scoring import score_predictions
+
+
+def test_experiment_passes_adapter_scale_to_modal(monkeypatch, tmp_path) -> None:
+    captured = {}
+
+    @contextmanager
+    def fake_modal_generator(*args, **kwargs):
+        captured.update(kwargs)
+        yield (lambda *_: {"response": "Answer."}), {
+            "adapter": {"run": "gated-02", "scale": kwargs["adapter_scale"]}
+        }
+
+    monkeypatch.setattr(experiment_runner, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        experiment_runner,
+        "load_evals",
+        lambda: [{"id": "ONE-01", "prompt": "Answer this."}],
+    )
+    monkeypatch.setattr(
+        "simple_llm.inference.modal.modal_generator", fake_modal_generator
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["experiment", "--adapter-run", "gated-02", "--adapter-scale", "1.0"],
+    )
+
+    experiment_runner.run_experiment(
+        experiment="test",
+        model="model",
+        condition="condition",
+        default_backend="modal",
+        require_adapter_run=True,
+    )
+
+    assert captured["adapter_scale"] == 1.0
 
 
 def test_generate_stops_on_model_and_chat_eos_tokens() -> None:

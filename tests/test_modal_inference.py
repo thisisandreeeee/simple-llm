@@ -1,15 +1,24 @@
+import inspect
 import json
 import warnings
 
 import pytest
 
 from simple_llm.inference.modal import (
+    ADAPTER_SCALE,
     ADAPTER_MODEL_CLASS,
     load_peft_adapter,
+    modal_generator,
     scale_peft_adapter,
     training_adapter_path,
     validate_adapter_config,
 )
+
+
+def test_modal_generator_defaults_to_quarter_scale() -> None:
+    parameter = inspect.signature(modal_generator).parameters["adapter_scale"]
+
+    assert parameter.default == ADAPTER_SCALE == 0.25
 
 
 def test_training_adapter_path_accepts_training_run_names() -> None:
