@@ -53,6 +53,39 @@ def test_experiment_passes_adapter_scale_to_modal(monkeypatch, tmp_path) -> None
     assert captured["adapter_scale"] == 1.0
 
 
+def test_experiment_uses_configured_default_adapter_scale(monkeypatch, tmp_path) -> None:
+    captured = {}
+
+    @contextmanager
+    def fake_modal_generator(*args, **kwargs):
+        captured.update(kwargs)
+        yield (lambda *_: {"response": "Answer."}), {
+            "adapter": {"run": "gated-02", "scale": kwargs["adapter_scale"]}
+        }
+
+    monkeypatch.setattr(experiment_runner, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        experiment_runner,
+        "load_evals",
+        lambda: [{"id": "ONE-01", "prompt": "Answer this."}],
+    )
+    monkeypatch.setattr(
+        "simple_llm.inference.modal.modal_generator", fake_modal_generator
+    )
+    monkeypatch.setattr(sys, "argv", ["experiment", "--adapter-run", "gated-02"])
+
+    experiment_runner.run_experiment(
+        experiment="test",
+        model="model",
+        condition="condition",
+        default_backend="modal",
+        require_adapter_run=True,
+        default_adapter_scale=1.0,
+    )
+
+    assert captured["adapter_scale"] == 1.0
+
+
 def test_generate_stops_on_model_and_chat_eos_tokens() -> None:
     class Tokenizer:
         eos_token_id = 248046

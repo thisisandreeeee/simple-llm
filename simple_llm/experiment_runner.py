@@ -89,6 +89,7 @@ def run_experiment(
     default_backend: str = "local",
     description: str | None = None,
     require_adapter_run: bool = False,
+    default_adapter_scale: float = 0.25,
     presence_penalty: float | None = None,
     repetition_penalty: float | None = None,
 ) -> None:
@@ -112,7 +113,7 @@ def run_experiment(
         parser.add_argument(
             "--adapter-scale",
             type=float,
-            help="LoRA adapter scale (default: 0.25).",
+            help=f"LoRA adapter scale (default: {default_adapter_scale:g}).",
         )
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
@@ -146,7 +147,7 @@ def run_experiment(
         parser.error("--adapter-run is required for a new run")
     if require_adapter_run:
         if args.adapter_scale is None:
-            args.adapter_scale = 0.25
+            args.adapter_scale = default_adapter_scale
         if not math.isfinite(args.adapter_scale) or args.adapter_scale < 0:
             parser.error("--adapter-scale must be a finite non-negative number")
 
