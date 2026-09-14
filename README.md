@@ -2,6 +2,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Hugging Face SFT model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--sft--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-sft-lora)
+[![Hugging Face GRPO model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--grpo--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-grpo-lora)
 [![Hugging Face dataset](https://img.shields.io/badge/%F0%9F%A4%97_Dataset-simple--llm--sft-yellow)](https://huggingface.co/datasets/thisisandreeeee/simple-llm-sft)
 
 **Can we post-train a small language model to produce technical answers that are both correct and simple?**
