@@ -1,4 +1,4 @@
 - GRPO on top of SFT LoRA adapter
 - Multiplicative reward function
-- Adapter scale 0.25
+- Adapter scale 1.0
 - Add presence penalty of 1.5, repetition penalty of 1.05

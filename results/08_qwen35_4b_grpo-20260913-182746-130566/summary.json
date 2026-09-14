@@ -1,0 +1,16 @@
+{
+  "prompt_count": 100,
+  "successful_count": 100,
+  "failed_count": 0,
+  "truncated_count": 0,
+  "generation_seconds": {
+    "total": 1702.90290736,
+    "mean": 17.0290290736
+  },
+  "output_tokens": {
+    "total": 33123,
+    "mean": 331.23
+  },
+  "output_tokens_per_second": 19.450903428986674,
+  "wall_seconds": 1741.792155749994
+}

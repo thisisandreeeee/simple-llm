@@ -27,8 +27,8 @@
   },
   "backend": "modal",
   "git": {
-    "commit": "c4656f7f11e0d19390c1347925887380134f9098",
-    "dirty": true
+    "commit": "5038376f35146eb781bc4348cdeb0faca3e582f1",
+    "dirty": false
   },
   "gpu_requested": "L4",
   "device": "cuda",
@@ -37,12 +37,12 @@
   "model_class": "Qwen3_5ForConditionalGeneration",
   "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
   "torch_dtype": "torch.bfloat16",
-  "model_load_seconds": 14.775704655999998,
+  "model_load_seconds": 11.391178448999998,
   "adapter": {
     "run": "qwen35-4b-grpo-gated-20260912-02",
     "path": "/training/qwen35-4b-grpo-gated-20260912-02/adapter",
     "base_model_class": "Qwen3_5ForConditionalGeneration",
-    "scale": 0.25,
+    "scale": 1.0,
     "scaled_layer_count": 128,
     "validated": true,
     "merged": true
