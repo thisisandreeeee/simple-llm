@@ -11,8 +11,9 @@
 Starting from Qwen3.5-4B, the project compares:
 
 - the base model,
-- prompt engineering for simpler answers, and
-- supervised fine-tuning (SFT) with LoRA.
+- prompt engineering for simpler answers,
+- supervised fine-tuning (SFT) with LoRA, and
+- Group Relative Policy Optimization (GRPO) with AI feedback.
 
 The target style is inspired by [ASD-STE100](https://www.asd-ste100.org/) Simplified Technical English: short sentences, common words, direct language, and one main idea at a time — without sacrificing technical correctness.
 
@@ -31,11 +32,15 @@ Build SFT dataset
 LoRA fine-tune Qwen3.5-4B
   │
   ▼
+Continue training with GRPO
+  │
+  ▼
 Run controlled experiments
   │
   ├── Base model
   ├── Prompt engineered
-  └── SFT
+  ├── SFT
+  └── SFT + GRPO
   │
   ▼
 Evaluate
@@ -55,17 +60,19 @@ The model is trained toward technical writing that:
 
 ## Experiment results
 
-Prompt engineering simplified answers most aggressively, but at a clear cost to quality; SFT achieved the strongest balance, improving simplicity while largely preserving correctness.
+Prompt engineering produced the shortest answers, but at a clear cost to quality. SFT improved simplicity while largely preserving correctness. GRPO improved the overall balance further: it produced much simpler and shorter answers than SFT, with the highest technical adequacy in this comparison.
 
-| Metric                    |       Base |  Prompted |        SFT |
-| ------------------------- | ---------: | --------: | ---------: |
-| **Semantic simplicity ↑** |     65.82% |    74.75% | **79.21%** |
-| **Technical adequacy ↑**  |     68.30% |    59.18% | **71.88%** |
-| **Task fulfilment ↑**     | **97.96%** |    87.75% |     95.57% |
-| **Clarity & coherence ↑** | **92.09%** |    85.25% |     90.63% |
-| Average sentence length ↓ |      17.93 | **11.15** |      15.37 |
-| Long-sentence fraction ↓  |     25.44% | **4.22%** |     15.76% |
-| Mean output tokens ↓      |    1,245.8 | **279.0** |      679.2 |
+| Metric                    |       Base |  Prompted |        SFT |       GRPO |
+| ------------------------- | ---------: | --------: | ---------: | ---------: |
+| **Semantic simplicity ↑** |     65.82% |    74.75% |     85.46% | **95.83%** |
+| **Technical adequacy ↑**  |     68.30% |    59.18% |     70.15% | **72.42%** |
+| **Task fulfilment ↑**     | **97.96%** |    87.75% |     95.71% |     94.33% |
+| **Clarity & coherence ↑** | **92.09%** |    85.25% | **92.09%** |     89.18% |
+| Average sentence length ↓ |      17.93 | **11.15** |      15.32 |      11.80 |
+| Long-sentence fraction ↓  |     25.44% |      4.22% |     15.35% |  **1.88%** |
+| Mean output tokens ↓      |    1,245.8 |  **279.0** |      622.3 |      331.2 |
+
+The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repetition penalty `1.05`. The GRPO column is Run 08: the same penalties with the adapter at full scale (`1.0`). Both use the same 100 evaluation prompts and decoding settings.
 
 ## Setup
 
@@ -80,8 +87,9 @@ Use `uv run` for the commands below, or activate the environment with
 
 ### DeepSeek
 
-DeepSeek generates SFT answers and judges experiment results. Copy the example
-environment file, add your API key, and load it into the current shell:
+DeepSeek generates SFT answers, scores GRPO training completions, and judges
+experiment results. Copy the example environment file, add your API key, and
+load it into the current shell:
 
 ```bash
 cp .env.example .env
@@ -181,8 +189,8 @@ uv run python -m simple_llm.grpo.training \
 
 `--adapter-run` is required. The job loads the adapter from the shared
 `simple-llm-training` Modal Volume and continues training its LoRA parameters;
-it does not merge the adapter into the base model first. Use `--run-name` to
-name the GRPO output run or `--max-steps 1` for a smoke test.
+it does not merge the adapter into the base model first. Use
+`--run-name` to name the GRPO output run or `--max-steps 1` for a smoke test.
 
 ### 4. Run experiments
 
@@ -201,11 +209,23 @@ uv run python experiments/05_qwen35_4b_sft.py --adapter-run RUN
 
 Pass `--adapter-scale 1.0` to evaluate the adapter at full strength.
 
-Experiments 06 and 07 test penalties that reduce repetitive SFT output:
+Experiments 06, 07, and 09 test penalties that reduce repetitive SFT output:
 
 ```bash
 uv run python experiments/06_qwen35_4b_sft_presence_penalty.py --adapter-run RUN
 uv run python experiments/07_qwen35_4b_sft_combined_penalties.py --adapter-run RUN
+
+# Experiment 09: the same penalties at full adapter strength
+uv run python experiments/09_qwen35_4b_sft_combined_penalties_scale_1.py --adapter-run RUN
+```
+
+Evaluate a completed GRPO adapter at full strength with the same combined
+penalties:
+
+```bash
+uv run python experiments/08_qwen35_4b_grpo.py \
+  --adapter-run RUN \
+  --adapter-scale 1.0
 ```
 
 The 4B experiments use an L4 by default. Pass `--gpu A10` or `--gpu L40S` to
