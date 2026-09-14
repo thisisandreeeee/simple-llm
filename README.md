@@ -69,8 +69,8 @@ Prompt engineering produced the shortest answers, but at a clear cost to quality
 | **Task fulfilment ↑**     | **97.96%** |    87.75% |     95.71% |     94.33% |
 | **Clarity & coherence ↑** | **92.09%** |    85.25% | **92.09%** |     89.18% |
 | Average sentence length ↓ |      17.93 | **11.15** |      15.32 |      11.80 |
-| Long-sentence fraction ↓  |     25.44% |      4.22% |     15.35% |  **1.88%** |
-| Mean output tokens ↓      |    1,245.8 |  **279.0** |      622.3 |      331.2 |
+| Long-sentence fraction ↓  |     25.44% |     4.22% |     15.35% |  **1.88%** |
+| Mean output tokens ↓      |    1,245.8 | **279.0** |      622.3 |      331.2 |
 
 The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repetition penalty `1.05`. The GRPO column is Run 08: the same penalties with the adapter at full scale (`1.0`). Both use the same 100 evaluation prompts and decoding settings.
 
@@ -89,6 +89,7 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 > In practice, eventual consistency is often chosen because it improves availability and performance. With strong consistency models, a network partition can cause the system to stop serving reads or writes. With eventual consistency, the system can keep serving operations during a partition, and clients simply see stale data until the partition heals. The trade-off is that there is a bounded window during which different clients may see different values.
 >
 > So:
+>
 > - Eventual consistency means reads will converge to the same value after updates propagate.
 > - It does not imply unreliability. Reliability and consistency are separate concerns; a distributed system can be both reliable and eventually consistent.
 
@@ -97,13 +98,14 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 > Eventual consistency means that after a period of time, all replicas in a distributed system will converge to the same value for a given data item. It is not an immediate guarantee: reads may return stale or outdated values before the system stabilizes.
 >
 > Does it imply unreliability? No. Eventual consistency describes how a system handles updates and conflicts, not whether it fails. A system can be reliable while using eventual consistency if:
+>
 > - Replicas are fault-tolerant (survive node failures).
 > - Updates are applied correctly once convergence occurs.
 > - The system meets its service-level objectives (availability, latency, consistency model) under expected workloads.
 >
 > So eventual consistency is a design trade-off, not a sign of unreliability.
 
-**GRPO**
+**SFT + GRPO**
 
 > Eventual consistency is a consistency model for distributed systems in which all nodes in the system converge to the same data value after some finite amount of time, provided that no new updates occur. It does not guarantee that every read will see the latest write immediately; instead, it promises that reads and writes will eventually return consistent results once propagation delays have settled.
 >
