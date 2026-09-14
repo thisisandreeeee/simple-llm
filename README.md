@@ -1,7 +1,7 @@
 # simple-llm
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![Hugging Face model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-lora)
+[![Hugging Face SFT model](https://img.shields.io/badge/%F0%9F%A4%97_Model-simple--llm--sft--lora-yellow)](https://huggingface.co/thisisandreeeee/simple-llm-sft-lora)
 [![Hugging Face dataset](https://img.shields.io/badge/%F0%9F%A4%97_Dataset-simple--llm--sft-yellow)](https://huggingface.co/datasets/thisisandreeeee/simple-llm-sft)
 
 **Can we post-train a small language model to produce technical answers that are both correct and simple?**
@@ -64,15 +64,15 @@ Prompt engineering produced the shortest answers, but at a clear cost to quality
 
 | Metric                    |       Base |  Prompted |        SFT |       GRPO |
 | ------------------------- | ---------: | --------: | ---------: | ---------: |
-| **Semantic simplicity ↑** |     65.82% |    74.75% |     85.46% | **95.83%** |
-| **Technical adequacy ↑**  |     68.30% |    59.18% |     70.15% | **72.42%** |
-| **Task fulfilment ↑**     | **97.96%** |    87.75% |     95.71% |     94.33% |
-| **Clarity & coherence ↑** | **92.09%** |    85.25% | **92.09%** |     89.18% |
+| Semantic simplicity ↑     |     65.82% |    74.75% |     85.46% | **95.83%** |
+| Technical adequacy ↑      |     68.30% |    59.18% |     70.15% | **72.42%** |
+| Task fulfilment ↑         | **97.96%** |    87.75% |     95.71% |     94.33% |
+| Clarity & coherence ↑     | **92.09%** |    85.25% | **92.09%** |     89.18% |
 | Average sentence length ↓ |      17.93 | **11.15** |      15.32 |      11.80 |
 | Long-sentence fraction ↓  |     25.44% |     4.22% |     15.35% |  **1.88%** |
 | Mean output tokens ↓      |    1,245.8 | **279.0** |      622.3 |      331.2 |
 
-The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repetition penalty `1.05`. The GRPO column is Run 08: the same penalties with the adapter at full scale (`1.0`). Both use the same 100 evaluation prompts and decoding settings.
+The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repetition penalty `1.05`. The GRPO column is Run 08: the same penalties with the adapter at full scale (`1.0`). All runs use the same 100 evaluation prompts and decoding settings.
 
 ## Example
 
@@ -80,7 +80,7 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 
 > What does eventual consistency mean, and does it imply that a distributed system is unreliable?
 
-**Base:**
+**Base Qwen3.5-4B:**
 
 > Eventual consistency is a consistency model for distributed systems in which, after some asynchronous updates are made to a data store, all subsequent reads will eventually return the same value. The key idea is that updates may not be visible everywhere immediately, but they will propagate through the system and converge to a single value after a finite time.
 >
@@ -93,7 +93,7 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 > - Eventual consistency means reads will converge to the same value after updates propagate.
 > - It does not imply unreliability. Reliability and consistency are separate concerns; a distributed system can be both reliable and eventually consistent.
 
-**SFT:**
+**SFT only:**
 
 > Eventual consistency means that after a period of time, all replicas in a distributed system will converge to the same value for a given data item. It is not an immediate guarantee: reads may return stale or outdated values before the system stabilizes.
 >
