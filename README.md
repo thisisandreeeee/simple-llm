@@ -76,11 +76,11 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 
 ## Example
 
-**Prompt**
+**Question:**
 
 > What does eventual consistency mean, and does it imply that a distributed system is unreliable?
 
-**Base**
+**Base:**
 
 > Eventual consistency is a consistency model for distributed systems in which, after some asynchronous updates are made to a data store, all subsequent reads will eventually return the same value. The key idea is that updates may not be visible everywhere immediately, but they will propagate through the system and converge to a single value after a finite time.
 >
@@ -93,7 +93,7 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 > - Eventual consistency means reads will converge to the same value after updates propagate.
 > - It does not imply unreliability. Reliability and consistency are separate concerns; a distributed system can be both reliable and eventually consistent.
 
-**SFT**
+**SFT:**
 
 > Eventual consistency means that after a period of time, all replicas in a distributed system will converge to the same value for a given data item. It is not an immediate guarantee: reads may return stale or outdated values before the system stabilizes.
 >
@@ -105,7 +105,7 @@ The SFT column is Run 07: adapter scale `0.25`, presence penalty `0.5`, and repe
 >
 > So eventual consistency is a design trade-off, not a sign of unreliability.
 
-**SFT + GRPO**
+**SFT + GRPO:**
 
 > Eventual consistency is a consistency model for distributed systems in which all nodes in the system converge to the same data value after some finite amount of time, provided that no new updates occur. It does not guarantee that every read will see the latest write immediately; instead, it promises that reads and writes will eventually return consistent results once propagation delays have settled.
 >
